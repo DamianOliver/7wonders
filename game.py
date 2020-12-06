@@ -35,8 +35,7 @@ class Player:
         self.cards = []
 
     def select_card(self, hand_cards):
-        input = raw_input("  Select a card: ")
-        selected_card_number = int(input)
+        selected_card_number = int(input("  Select a card: "))
         self.cards.append(selected_card_number)
 
     def print_cards(self):
@@ -47,8 +46,6 @@ class Player:
 class Card:
     def __init__(self):
         self.points = 1
-
-    def print_card(self):
 
 
 
