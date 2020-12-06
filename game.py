@@ -1,12 +1,13 @@
+import random
 
-
-NUM_TURNS = 6
+NUM_TURNS = 2
 
 class Game:
     def __init__(self):
         self.turn = 0
         self.players = [Player(1), Player(2)]
-        self.cards = [Card(), Card(), Card()]
+
+        self.cards = [Card() for i in range(4)]
 
     def next_turn(self):
         self.turn += 1
@@ -17,7 +18,7 @@ class Game:
 
             for player in self.players:
                 print("  Player {}".format(player.player_number))
-                player.select_card([])
+                player.select_card(self.cards)
 
             self.turn += 1
 
@@ -35,17 +36,32 @@ class Player:
         self.cards = []
 
     def select_card(self, hand_cards):
-        selected_card_number = int(input("  Select a card: "))
-        self.cards.append(selected_card_number)
+        self.print_cards()
+        selected_card_number = self.ask_for_card_selection(hand_cards)
+        self.cards.append(hand_cards[selected_card_number])
+        del hand_cards[selected_card_number]
+
+    def ask_for_card_selection(self, hand_cards):
+        for i in range(len(hand_cards)):
+            print("Card {}: Points = {}".format(i, hand_cards[i].points))
+        while True:
+            try:
+                index = int(input("  Select a card: "))
+                if index >= 0 and index < len(hand_cards):
+                    return index
+            except ValueError: 
+                pass
+                
+            print("Enter a number from 0 to {}".format(len(hand_cards) - 1))
 
     def print_cards(self):
         for card in self.cards:
-            print("    {}".format(card))
+            print("    {}".format(card.points))
 
 
 class Card:
     def __init__(self):
-        self.points = 1
+        self.points = random.randrange(0,6)
 
 
 
