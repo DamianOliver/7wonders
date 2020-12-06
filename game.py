@@ -1,24 +1,30 @@
 import random
 
-NUM_TURNS = 2
+
+NUM_CARDS_PER_PLAYER = 7
+NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
 class Game:
     def __init__(self):
         self.turn = 0
         self.players = [Player(1), Player(2)]
-
-        self.cards = [Card() for i in range(4)]
+        self.hands = []
+        for i in range(len(self.players)):
+           self.hands.append([Card() for i in range(NUM_CARDS_PER_PLAYER)]) 
 
     def next_turn(self):
         self.turn += 1
 
     def play(self):
         while self.turn < NUM_TURNS:
+
             print("turn {}".format(self.turn))
 
-            for player in self.players:
+            for i in range(len(self.players)):
+                player = self.players[i]
+                hand = self.hands[(i + self.turn) % len(self.hands)]
                 print("  Player {}".format(player.player_number))
-                player.select_card(self.cards)
+                player.select_card(hand)
 
             self.turn += 1
 
