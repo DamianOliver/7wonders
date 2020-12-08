@@ -1,6 +1,6 @@
 import random
 
-NUM_PLAYERS = 2
+NUM_PLAYERS = 1
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -25,8 +25,6 @@ class Game:
                 hand = self.hands[(i + self.turn) % len(self.hands)]
                 print("  Player {}".format(player.player_number))
                 player.select_card(hand)
-                print("hand cards: ", len(hand))
-                print(hand)
 
             self.turn += 1
 
@@ -37,22 +35,23 @@ class Game:
             print("  Player {} Cards: ".format(player.player_number))
             player.print_cards()
 
+
     def create_deck(self):
         deck = [ \
-            Card("Tavern", 3, "Commercial"), 
-            Card("Tavern", 3, "Commercial"), 
-            Card("Temple", 4, "Civic"), 
-            Card("Temple", 4, "Civic"), 
-            Card("Scriptorium", 1, "Science"), 
-            Card("Scriptorium", 1, "Science"), 
-            Card("Quarry", 0, "Raw Rescource"),
-            Card("Quarry", 0, "Raw Resource"), 
-            Card("Towel Factory", 0, "Manufactored Resource"), 
-            Card("Towel Factory", 0, "Manufactored Resource"), 
-            Card("Guard Tower", 3, "Military"), 
-            Card("Guard Tower", 3, "Military"), 
-            Card("University", 8, "Science"), 
-            Card("Palace", 8, "Civic")]
+            Card("Tavern", "Commercial", provides_resources = ["brick"]), 
+            Card("Tavern", "Commercial", provides_resources = ["coal"]), 
+            Card("Stone + Bricks 'r' Us", "Raw Resource Either/Or", provides_resources = ["stone", "brick"]), 
+            Card("Temple", "Civic", points = 4, cost = ["coal"]), 
+            Card("Scriptorium", "Science", provides_resources = ["science_symbol"]), 
+            Card("Scriptorium", "Science", provides_resources = ["science_symbol"]), 
+            Card("Quarry", "Raw Resource", provides_resources = ["stone"]),
+            Card("Quarry", "Raw Resource", provides_resources = ["stone"]), 
+            Card("Towel Factory", "Manufactored Resource", provides_resources = ["silk"]), 
+            Card("Towel Factory", "Manufactored Resource", provides_resources = ["silk"]), 
+            Card("Guard Tower", "Military", provides_resources = ["shield"], cost = ["stone"]), 
+            Card("Guard Tower", "Military", provides_resources = ["shield"], cost = ["stone"]), 
+            Card("University", "Science", provides_resources = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]), 
+            Card("Palace", "Civic", points = 8, cost = ["stone", "stone"])]
         random.shuffle(deck)
         return deck
 
@@ -69,12 +68,47 @@ class Player:
     def __init__(self, player_number):
         self.player_number = player_number
         self.cards = []
+        self.money = 3
+
 
     def select_card(self, hand_cards):
-        self.print_cards()
-        selected_card_number = self.ask_for_card_selection(hand_cards)
-        self.cards.append(hand_cards[selected_card_number])
-        del hand_cards[selected_card_number]
+        while True:
+            self.print_cards()
+            selected_card_number = self.ask_for_card_selection(hand_cards)
+            selected_card = hand_cards[selected_card_number]
+            player_resources_available = self.available_resources(self.cards)
+            
+            if self.has_resources_for_card(player_resources_available, selected_card):
+                self.cards.append(hand_cards[selected_card_number])
+                del hand_cards[selected_card_number]
+            else:
+                print("You do not have the required resources for that card.")
+
+    def available_resources(self, cards):
+        resources = []
+        for card in cards:
+            if card.card_type == "Raw Resource" or card.card_type == "Manufactored Resource" or card.card_type == "Commercial":
+                resources.extend(card.provides_resources)
+            # elif self.cards[card].card_type == "Raw Resource Either/Or" or self.cards[card].card_type == "Manufactored Resource Either/Or":
+        return resources
+
+    def has_resources_for_card(self, resources, card):
+        card_resource_cost = card.cost.copy()
+
+        i = 0
+        a = 0
+        while i < len(card_resource_cost):
+            while a < len(resources):
+                if resources[a] == card_resource_cost[i]:
+                    del resources[a]
+                    del card_resource_cost[i]
+                    i -= 1
+                    break 
+                else: 
+                    a += 1
+            i += 1
+
+        return len(card_resource_cost) == 0
 
     def ask_for_card_selection(self, hand_cards):
         for i in range(len(hand_cards)):
@@ -92,24 +126,41 @@ class Player:
             print("hand: ", hand_cards)
 
     def print_cards(self):
+        self.total_science_symbols = 0
         self.total_score = 0
         for card in self.cards:
-            print("    {} - {} points".format(card.name, card.points))
+            if card.card_type == "Science":
+                for i in range(0, len(card.provides_resources)):
+                    self.total_science_symbols += 1
+        print("total science symbols: ", self.total_science_symbols)
+        for card in self.cards:
+            if card.card_type == "Science":
+                card.points = 0
+                for i in range(len(card.provides_resources)):
+                    card.points += self.total_science_symbols
+            if card.points > 0 and len(card.provides_resources) > 0:
+                print("    {} - Provides {} Points - {} Cost - {}".format(card.name, card.provides_resources, card.points, card.cost))
+            elif card.points > 0:
+                print("    {} - {} points Cost - {}".format(card.name, card.points, card.cost))
+            else:
+                print("    {} - Provides {} Cost - {}".format(card.name, card.provides_resources, card.cost))
             self.total_score += card.points
         print("Total Score: ", self.total_score)
 
 
 class Card:
-    def __init__( self, name, points, card_type):
+    def __init__( self, name, card_type, points = 0, provides_resources = [], cost = []):
+        self.cost = cost
         self.points = points
         self.card_type = card_type
         self.name = name
+        self.provides_resources = provides_resources
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return "{}: Card Type: {}  Points = {}".format(self.name, self.card_type, self.points)
+        return "{}: Card Type: {}  Points = {}, Provides = {}, Cost {}".format(self.name, self.card_type, self.points, self.provides_resources, self.cost)
 
 
 
