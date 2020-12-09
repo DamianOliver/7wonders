@@ -1,7 +1,7 @@
 import random
 
 NUM_PLAYERS = 1
-NUM_CARDS_PER_PLAYER = 7
+NUM_CARDS_PER_PLAYER = 4
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
 class Game:
@@ -38,21 +38,21 @@ class Game:
 
     def create_deck(self):
         deck = [ \
+            Card("University", "Science", provides_sciences = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]), 
+            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",),("silk",)]), 
+            Card("Stone + Bricks 'r' Us", "Raw Resource", provides_resources = [("stone", "brick")]), 
             Card("Tavern", "Commercial", provides_resources = [("brick",)]), 
             Card("Tavern", "Commercial", provides_resources = [("coal",)]), 
-            Card("Stone + Bricks 'r' Us", "Raw Resource Either/Or", provides_resources = [("stone", "brick")]), 
             Card("Temple", "Civic", points = 4, cost = ["coal"]), 
             Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]), 
             Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]), 
             Card("Quarry", "Raw Resource", provides_resources = [("stone",)]),
             Card("Quarry", "Raw Resource", provides_resources = [("stone",)]), 
             Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",)]), 
-            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",)]), 
             Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]), 
             Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]), 
-            Card("University", "Science", provides_sciences = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]), 
             Card("Palace", "Civic", points = 8, cost = ["stone", "stone"])]
-        random.shuffle(deck)
+        # random.shuffle(deck)
         return deck
 
     def create_hands(self, deck):
@@ -76,50 +76,79 @@ class Player:
             self.print_cards()
             selected_card_number = self.ask_for_card_selection(hand_cards)
             selected_card = hand_cards[selected_card_number]
-            player_resources_available = self.available_resources(self.cards)
+            # player_resources_available = self.available_resources(self.cards)
             
-            if self.has_resources_for_card(player_resources_available, selected_card):
+            # if self.has_resources_for_card(player_resources_available, selected_card):
+
+            resource_tuples = self.available_resources_tuples()
+
+            if self.has_resources(selected_card.cost, resource_tuples):
                 self.cards.append(hand_cards[selected_card_number])
                 del hand_cards[selected_card_number]
             else:
                 print("You do not have the required resources for that card.")
 
-    def available_resources(self, cards):
-        resources = []
-        either_or_resources = []
-        for card in cards:
+    def available_resources_tuples(self):
+        resource_tuples = []        
+        for card in self.cards:
             for resource_tuple in card.provides_resources:
-                 resources.append(resource_tuple[0])                
-            #if card.card_type == "Raw Resource" or card.card_type == "Manufactored Resource" or card.card_type == "Commercial":
+                resource_tuples.append(resource_tuple)
+        return resource_tuples
 
-                #resources.extend(card.provides_resources)
-            #elif card.card_type == "Raw Resource Either/Or" or self.cards[card].card_type == "Manufactored Resource Either/Or":
-                #either_or.append(card.provides_resources)
-        # I really don't know what I'm doing...
-        # for card in either_or_resources:
-        #     new_list = resources.copy
-        #     for resource in card.provides_resources:
-        #         new_list.append(resource)
-        #         resources.append(new_list)
-        return resources
+    def has_resources(self, cost, resource_tuples):
+        if len(cost) == 0:
+            return True
+        elif len(resource_tuples) == 0:
+            return False
+        elif len(resource_tuples[0]) == 0:
+            return self.has_resources(cost, resource_tuples[1:])
+        else:
+            for resource_option in resource_tuples[0]:
+                cost_copy = cost.copy()
+                try: 
+                    cost_copy.remove(resource_option)
+                except:
+                    pass
+                if self.has_resources(cost_copy, resource_tuples[1:]):
+                    return True
 
-    def has_resources_for_card(self, resources, card):
-        card_resource_cost = card.cost.copy()
+    # def available_resources(self, cards):
+    #     resource_lists = [[]]        
+    #     for card in cards:
+    #         for resource_tuple in card.provides_resources:
+    #             new_resource_lists = []
+    #             for resource_list in resource_lists:
+    #                 for provided_resource in resource_tuple:
+    #                     resource_list_copy = resource_list.copy()
+    #                     resource_list_copy.append(provided_resource) 
+    #                     new_resource_lists.append(resource_list_copy) 
+    #             resource_lists = new_resource_lists
 
-        i = 0
-        a = 0
-        while i < len(card_resource_cost):
-            while a < len(resources):
-                if resources[a] == card_resource_cost[i]:
-                    del resources[a]
-                    del card_resource_cost[i]
-                    i -= 1
-                    break 
-                else: 
-                    a += 1
-            i += 1
+    #     return resource_lists
 
-        return len(card_resource_cost) == 0
+    # def has_resources_for_card(self, resource_lists, card):
+    #     for resources in resource_lists:
+    #         if self.has_resources_for_card_for_resource_list(resources, card):
+    #             return True
+    #     return False
+
+    # def has_resources_for_card_for_resource_list(self, resources, card):
+    #     card_resource_cost = card.cost.copy()
+
+    #     i = 0
+    #     while i < len(card_resource_cost):
+    #         a = 0
+    #         while a < len(resources):
+    #             if resources[a] == card_resource_cost[i]:
+    #                 del resources[a]
+    #                 del card_resource_cost[i]
+    #                 i -= 1
+    #                 break 
+    #             else: 
+    #                 a += 1
+    #         i += 1
+
+    #     return len(card_resource_cost) == 0
 
     def ask_for_card_selection(self, hand_cards):
         for i in range(len(hand_cards)):
