@@ -15,16 +15,43 @@ class Game:
     def next_turn(self):
         self.turn += 1
 
+    def ask_for_action(self):
+        while True:
+            action_input = input("Select your action, d for discard, p for play card, or b to buy a resource: ")
+            if action_input == "d" or action_input == "p" or action_input == "b":
+                return action_input
+
+    def player_right_left(self, player_index):
+        if player_index == 0:
+            player_right = self.players[player_index + 1]
+            player_left = self.players[len(self.players)]
+        elif player_index == len(self.players):
+            player_right = self.players[0]
+            player_left = self.players[player_index - 1]
+        else:
+            player_right = self.players[player_index + 1]
+            player_left = self.player_indexplayers[ - 1]
+        return player_right, player_left
+
     def play(self):
         while self.turn < NUM_TURNS:
-
             print("turn {}".format(self.turn))
 
             for i in range(len(self.players)):
                 player = self.players[i]
                 hand = self.hands[(i + self.turn) % len(self.hands)]
                 print("  Player {}".format(player.player_number))
-                player.select_card(hand)
+                player.print_cards()
+                for i in range(len(hand)):
+                    print("Number: {} {}".format(i, hand[i].__str__()))
+                action = self.ask_for_action()
+                if action == "d":
+                    player.discard_card(hand)
+                elif action == "p":
+                    player.select_card(hand)
+                # elif action == "b":
+                #     player.buy_resource(player)
+
 
             self.turn += 1
 
@@ -40,7 +67,7 @@ class Game:
         deck = [ \
             Card("University", "Science", provides_sciences = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]), 
             Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",),("silk",)]), 
-            Card("Stone + Bricks 'r' Us", "Raw Resource", provides_resources = [("stone", "brick")]), 
+            Card("Stones + Bricks 'r' Us", "Raw Resource", provides_resources = [("stone", "brick")]), 
             Card("Tavern", "Commercial", provides_resources = [("brick",)]), 
             Card("Tavern", "Commercial", provides_resources = [("coal",)]), 
             Card("Temple", "Civic", points = 4, cost = ["coal"]), 
@@ -70,10 +97,15 @@ class Player:
         self.cards = []
         self.money = 3
 
+    def discard_card(self, hand_cards):
+        selected_card_number = self.ask_for_card_selection(hand_cards)
+        selected_card = hand_cards[selected_card_number]
+        del hand_cards[selected_card_number]
+        self.money += 3
+        print("MONEY: ", self.money)
 
     def select_card(self, hand_cards):
         while True:
-            self.print_cards()
             selected_card_number = self.ask_for_card_selection(hand_cards)
             selected_card = hand_cards[selected_card_number]
             # player_resources_available = self.available_resources(self.cards)
@@ -112,53 +144,14 @@ class Player:
                 if self.has_resources(cost_copy, resource_tuples[1:]):
                     return True
 
-    # def available_resources(self, cards):
-    #     resource_lists = [[]]        
-    #     for card in cards:
-    #         for resource_tuple in card.provides_resources:
-    #             new_resource_lists = []
-    #             for resource_list in resource_lists:
-    #                 for provided_resource in resource_tuple:
-    #                     resource_list_copy = resource_list.copy()
-    #                     resource_list_copy.append(provided_resource) 
-    #                     new_resource_lists.append(resource_list_copy) 
-    #             resource_lists = new_resource_lists
-
-    #     return resource_lists
-
-    # def has_resources_for_card(self, resource_lists, card):
-    #     for resources in resource_lists:
-    #         if self.has_resources_for_card_for_resource_list(resources, card):
-    #             return True
-    #     return False
-
-    # def has_resources_for_card_for_resource_list(self, resources, card):
-    #     card_resource_cost = card.cost.copy()
-
-    #     i = 0
-    #     while i < len(card_resource_cost):
-    #         a = 0
-    #         while a < len(resources):
-    #             if resources[a] == card_resource_cost[i]:
-    #                 del resources[a]
-    #                 del card_resource_cost[i]
-    #                 i -= 1
-    #                 break 
-    #             else: 
-    #                 a += 1
-    #         i += 1
-
-    #     return len(card_resource_cost) == 0
 
     def ask_for_card_selection(self, hand_cards):
-        for i in range(len(hand_cards)):
-            print("Number: {} {}".format(i, hand_cards[i].__str__()))
         while True:
             try:
                 index = int(input("  Select a card: "))
                 if index >= 0 and index < len(hand_cards):
                     return index
-            except ValueError: 
+            except ValueError:
                 pass
                 
             print("Enter a number from 0 to {}".format(len(hand_cards) - 1))
@@ -186,6 +179,18 @@ class Player:
                 print("    {} - Provides {} Cost - {}".format(card.name, card.provides_resources, card.cost))
             self.total_score += card.points
         print("Total Score: ", self.total_score)
+
+    # def buy_resource(self, player_index):
+    #     player_right_available_resources = []
+    #     player_left_available_resources = []
+    #     player_right_index, player_left_index = Game.player_right_left(player_index)
+    #     right_player = Game.players[player_right_index]
+    #     left_player = Game.players[player_left_index]
+    #     for card in right_player.cards:
+    #         if card.type == "Manufactored Resource" or card.type == "Raw Resource":
+    #             player_right_available_resources.append(card)
+    #             print(card.provides_resources)
+
 
 
 class Card:
