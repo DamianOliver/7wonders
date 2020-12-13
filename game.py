@@ -15,12 +15,6 @@ class Game:
     def next_turn(self):
         self.turn += 1
 
-    def ask_for_action(self):
-        while True:
-            action_input = input("Select your action, d for discard, p for play card, or b to buy a resource: ")
-            if action_input == "d" or action_input == "p" or action_input == "b":
-                return action_input
-
     def player_right_left(self, player_index):
         if player_index == 0:
             player_right = self.players[player_index + 1]
@@ -33,35 +27,10 @@ class Game:
             player_left = self.player_indexplayers[ - 1]
         return player_right, player_left
 
-    def play(self):
-        while self.turn < NUM_TURNS:
-            print("turn {}".format(self.turn))
-
-            for i in range(len(self.players)):
-                player = self.players[i]
-                hand = self.hands[(i + self.turn) % len(self.hands)]
-                print("  Player {}".format(player.player_number))
-                player.print_cards()
-                for i in range(len(hand)):
-                    print("Number: {} {}".format(i, hand[i].__str__()))
-                action = self.ask_for_action()
-                if action == "d":
-                    player.discard_card(hand)
-                elif action == "p":
-                    player.select_card(hand)
-                # elif action == "b":
-                #     player.buy_resource(player)
-
-
-            self.turn += 1
-
-        self.print_player_cards()
-
     def print_player_cards(self):
         for player in self.players:
             print("  Player {} Cards: ".format(player.player_number))
             player.print_cards()
-
 
     def create_deck(self):
         deck = [ \
@@ -97,28 +66,17 @@ class Player:
         self.cards = []
         self.money = 3
 
-    def discard_card(self, hand_cards):
-        selected_card_number = self.ask_for_card_selection(hand_cards)
-        selected_card = hand_cards[selected_card_number]
-        del hand_cards[selected_card_number]
+    def give_moneys_for_discard(self):
         self.money += 3
-        print("MONEY: ", self.money)
 
-    def select_card(self, hand_cards):
-        while True:
-            selected_card_number = self.ask_for_card_selection(hand_cards)
-            selected_card = hand_cards[selected_card_number]
-            # player_resources_available = self.available_resources(self.cards)
-            
-            # if self.has_resources_for_card(player_resources_available, selected_card):
+    def play_card(self, selected_card):
+        resource_tuples = self.available_resources_tuples()
 
-            resource_tuples = self.available_resources_tuples()
-
-            if self.has_resources(selected_card.cost, resource_tuples):
-                self.cards.append(hand_cards[selected_card_number])
-                del hand_cards[selected_card_number]
-            else:
-                print("You do not have the required resources for that card.")
+        if self.has_resources(selected_card.cost, resource_tuples):
+            self.cards.append(selected_card)
+            return True
+        else:
+            return False
 
     def available_resources_tuples(self):
         resource_tuples = []        
@@ -143,20 +101,6 @@ class Player:
                     pass
                 if self.has_resources(cost_copy, resource_tuples[1:]):
                     return True
-
-
-    def ask_for_card_selection(self, hand_cards):
-        while True:
-            try:
-                index = int(input("  Select a card: "))
-                if index >= 0 and index < len(hand_cards):
-                    return index
-            except ValueError:
-                pass
-                
-            print("Enter a number from 0 to {}".format(len(hand_cards) - 1))
-            print("hand cards", len(hand_cards))
-            print("hand: ", hand_cards)
 
     def print_cards(self):
         self.total_science_symbols = 0
@@ -208,7 +152,3 @@ class Card:
 
     def __str__(self):
         return "{}: Card Type: {}  Points = {}, Resources = {}, Science = {}, Shields = {}, Cost {}".format(self.name, self.card_type, self.points, self.provides_resources, self.provides_sciences, self.num_sheilds, self.cost)
-
-
-
-Game().play()
