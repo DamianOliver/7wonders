@@ -1,8 +1,35 @@
 import random
+from enum import Enum
 
 NUM_PLAYERS = 1
 NUM_CARDS_PER_PLAYER = 4
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
+
+class R(Enum):
+    BRICK = "brick"
+    SILK = "silk"
+    STONE = "stone"
+    COAL = "coal"
+
+    def __repr__(self):
+        return str(self.value)
+
+    def __str__(self):
+        return str(self.value)
+
+class C(Enum):
+    SCIENCE = "Science"
+    MFG_R = "Manufactored Resource"
+    RAW_R = "Raw Resource"
+    COMMERCIAL = "Commercial"
+    MILITARY = "Military"
+    CIVIC = "Civic"
+
+    def __repr__(self):
+        return str(self.value)
+
+    def __str__(self):
+        return str(self.value)
 
 class Game:
     def __init__(self):
@@ -34,20 +61,20 @@ class Game:
 
     def create_deck(self):
         deck = [ \
-            Card("University", "Science", provides_sciences = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]),
-            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",),("silk",)]),
-            Card("Stones + Bricks 'r' Us", "Raw Resource", provides_resources = [("stone", "brick")]),
-            Card("Tavern", "Commercial", provides_resources = [("brick",)]),
-            Card("Tavern", "Commercial", provides_resources = [("coal",)]),
-            Card("Temple", "Civic", points = 4, cost = ["coal"]),
-            Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]),
-            Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]),
-            Card("Quarry", "Raw Resource", provides_resources = [("stone",)]),
-            Card("Quarry", "Raw Resource", provides_resources = [("stone",)]),
-            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",)]),
-            Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]),
-            Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]),
-            Card("Palace", "Civic", points = 8, cost = ["stone", "stone"])]
+            Card("University", C.SCIENCE, provides_sciences = ["science_symbol", "science_symbol"], cost = [R.BRICK, R.SILK]),
+            Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,),(R.SILK,)]),
+            Card("Stones + Bricks 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)]),
+            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.BRICK,)]),
+            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.COAL,)]),
+            Card("Temple", C.CIVIC, points = 4, cost = [R.COAL]),
+            Card("Scriptorium", C.SCIENCE, provides_sciences = ["science_symbol"]),
+            Card("Scriptorium", C.SCIENCE, provides_sciences = ["science_symbol"]),
+            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
+            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
+            Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,)]),
+            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
+            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
+            Card("Palace", C.CIVIC, points = 8, cost = [R.STONE, R.STONE])]
         # random.shuffle(deck)
         return deck
 
@@ -108,12 +135,12 @@ class Player:
         self.total_science_symbols = 0
         self.total_score = 0
         for card in self.cards:
-            if card.card_type == "Science":
+            if card.card_type == C.SCIENCE:
                 for i in range(0, len(card.provides_resources)):
                     self.total_science_symbols += 1
         print("total science symbols: ", self.total_science_symbols)
         for card in self.cards:
-            if card.card_type == "Science":
+            if card.card_type == C.SCIENCE:
                 card.points = 0
                 for i in range(len(card.provides_resources)):
                     card.points += self.total_science_symbols
@@ -133,7 +160,7 @@ class Player:
     #     right_player = Game.players[player_right_index]
     #     left_player = Game.players[player_left_index]
     #     for card in right_player.cards:
-    #         if card.type == "Manufactored Resource" or card.type == "Raw Resource":
+    #         if card.type == C.MFG_R or card.type == C.RAW_R:
     #             player_right_available_resources.append(card)
     #             print(card.provides_resources)
 
@@ -151,4 +178,5 @@ class Card:
         return self.__str__()
 
     def __str__(self):
-        return "{}: Card Type: {}  Points = {}, Resources = {}, Science = {}, Shields = {}, Cost {}".format(self.name, self.card_type, self.points, self.provides_resources, self.provides_sciences, self.num_sheilds, self.cost)
+        return "{}: Card Type: {}  Points = {}, Resources = {}, Science = {}, Shields = {}, Cost {}".format(
+            self.name, self.card_type, self.points, self.provides_resources, self.provides_sciences, self.num_sheilds, self.cost)

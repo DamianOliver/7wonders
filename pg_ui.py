@@ -49,9 +49,9 @@ class PgUi:
         print("drawing stuff")
         screen.fill(BACKRGOUND_COLOR   )
         for i in range(len(hand_cards)):
-            if hand_cards[i].card_type == "Military":
+            if hand_cards[i].card_type == C.MILITARY:
                 self.draw_rounded_rect(200, 50, 20, HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2, MILITARY_COLOR)
-            elif hand_cards[i].card_type == "Science":
+            elif hand_cards[i].card_type == SCIENCE:
                 self.draw_rounded_rect(200, 50, 20, HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2, SCIENCE_COLOR)
             else:
                 self.draw_rounded_rect(200, 50, 20, HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2, SCIENCE_COLOR)
