@@ -116,7 +116,7 @@ class Player:
                 for i in range(len(card.provides_resources)):
                     card.points += self.total_science_symbols
             if card.points > 0 and len(card.provides_resources) > 0:
-                print("    {} - Provides {} Points - {} Cost - {}".format(card.name, card.provides_resources, card.points, card.cost))
+                print("    {30} - Provides {:>20} Points - {:>4} Cost - {:>20}".format(card.name, card.provides_resources, card.points, card.cost))
             elif card.points > 0:
                 print("    {} - {} points Cost - {}".format(card.name, card.points, card.cost))
             else:
@@ -134,8 +134,6 @@ class Player:
     #         if card.type == "Manufactored Resource" or card.type == "Raw Resource":
     #             player_right_available_resources.append(card)
     #             print(card.provides_resources)
-
-
 
 class Card:
     def __init__( self, name, card_type, points = 0, provides_resources = [], cost = [], provides_sciences = [], num_shields = 0):
