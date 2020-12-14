@@ -34,19 +34,19 @@ class Game:
 
     def create_deck(self):
         deck = [ \
-            Card("University", "Science", provides_sciences = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]), 
-            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",),("silk",)]), 
-            Card("Stones + Bricks 'r' Us", "Raw Resource", provides_resources = [("stone", "brick")]), 
-            Card("Tavern", "Commercial", provides_resources = [("brick",)]), 
-            Card("Tavern", "Commercial", provides_resources = [("coal",)]), 
-            Card("Temple", "Civic", points = 4, cost = ["coal"]), 
-            Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]), 
-            Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]), 
+            Card("University", "Science", provides_sciences = ["science_symbol", "science_symbol"], cost = ["brick", "silk"]),
+            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",),("silk",)]),
+            Card("Stones + Bricks 'r' Us", "Raw Resource", provides_resources = [("stone", "brick")]),
+            Card("Tavern", "Commercial", provides_resources = [("brick",)]),
+            Card("Tavern", "Commercial", provides_resources = [("coal",)]),
+            Card("Temple", "Civic", points = 4, cost = ["coal"]),
+            Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]),
+            Card("Scriptorium", "Science", provides_sciences = ["science_symbol"]),
             Card("Quarry", "Raw Resource", provides_resources = [("stone",)]),
-            Card("Quarry", "Raw Resource", provides_resources = [("stone",)]), 
-            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",)]), 
-            Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]), 
-            Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]), 
+            Card("Quarry", "Raw Resource", provides_resources = [("stone",)]),
+            Card("Towel Factory", "Manufactored Resource", provides_resources = [("silk",)]),
+            Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]),
+            Card("Guard Tower", "Military", num_shields = 1, cost = ["stone"]),
             Card("Palace", "Civic", points = 8, cost = ["stone", "stone"])]
         # random.shuffle(deck)
         return deck
@@ -70,7 +70,7 @@ class Player:
         self.money += 3
 
     def play_card(self, selected_card):
-        resource_tuples = self.available_resources_tuples()
+        resource_tuples = self.available_resources_tuples(self.cards)
 
         if self.has_resources(selected_card.cost, resource_tuples):
             self.cards.append(selected_card)
@@ -78,9 +78,9 @@ class Player:
         else:
             return False
 
-    def available_resources_tuples(self):
-        resource_tuples = []        
-        for card in self.cards:
+    def available_resources_tuples(self, cards):
+        resource_tuples = []
+        for card in cards:
             for resource_tuple in card.provides_resources:
                 resource_tuples.append(resource_tuple)
         return resource_tuples
@@ -95,12 +95,14 @@ class Player:
         else:
             for resource_option in resource_tuples[0]:
                 cost_copy = cost.copy()
-                try: 
+                try:
                     cost_copy.remove(resource_option)
                 except:
                     pass
                 if self.has_resources(cost_copy, resource_tuples[1:]):
                     return True
+            # No matches found
+            return False
 
     def print_cards(self):
         self.total_science_symbols = 0
