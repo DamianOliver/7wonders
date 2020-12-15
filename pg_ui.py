@@ -54,6 +54,7 @@ class PgUi:
 
     def draw_hand(self, hand_cards):
         for i in range(len(hand_cards)):
+
             round_distance = HAND_CARD_SIZE[0] / 17
             hand_spacing = screen_dimension[0]/30
             hand_margin = (screen_dimension[0] - (hand_spacing + HAND_CARD_SIZE[0])*len(hand_cards) + hand_spacing)/2
