@@ -60,7 +60,7 @@ class PgUi:
             hand_margin = (screen_dimension[0] - (hand_spacing + HAND_CARD_SIZE[0])*len(hand_cards) + hand_spacing)/2
             card_location = ((hand_margin + i * (hand_spacing + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
             print(hand_cards[i].card_type)
-            if hand_cards[i].card_type == "Military":
+            if hand_cards[i].card_type == C.MILITARY:
                 pg.draw.rect(screen, pg.Color(MILITARY_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))
                 for i in range(hand_cards[i].num_sheilds):
                     print("mIlLiTAry")
@@ -70,15 +70,15 @@ class PgUi:
                     screen.blit(shield, (shield_pos[0], shield_pos[1]))
                     print(shield_pos[0])
                     print(card_location[0])
-            elif hand_cards[i].card_type == "Science":
+            elif hand_cards[i].card_type == C.SCIENCE:
                 pg.draw.rect(screen, pg.Color(SCIENCE_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))
-            elif hand_cards[i].card_type == "Raw Resource":
+            elif hand_cards[i].card_type == C.RAW_R:
                 pg.draw.rect(screen, pg.Color(RAW_RESOURCE_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))
-            elif hand_cards[i].card_type == "Commercial":
+            elif hand_cards[i].card_type == C.COMMERCIAL:
                 pg.draw.rect(screen, pg.Color(COMMERCIAL_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))
-            elif hand_cards[i].card_type == "Manufactored Resource":
+            elif hand_cards[i].card_type == C.MFG_R:
                 pg.draw.rect(screen, pg.Color(MANUFACTORED_RESOURCE_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))
-            elif hand_cards[i].card_type == "Civic":
+            elif hand_cards[i].card_type == C.CIVIC:
                 pg.draw.rect(screen, pg.Color(CIVIC_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))
             else:
                 pg.draw.rect(screen, pg.Color(0, 0, 0), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(round_distance))

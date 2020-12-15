@@ -61,6 +61,8 @@ class Game:
 
     def create_deck(self):
         deck = [ \
+            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
+            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
             Card("University", C.SCIENCE, provides_sciences = ["science_symbol", "science_symbol"], cost = [R.BRICK, R.SILK]),
             Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,),(R.SILK,)]),
             Card("Stones + Bricks 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)]),
@@ -72,8 +74,6 @@ class Game:
             Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
             Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
             Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,)]),
-            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
-            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
             Card("Palace", C.CIVIC, points = 8, cost = [R.STONE, R.STONE])]
         # random.shuffle(deck)
         return deck
