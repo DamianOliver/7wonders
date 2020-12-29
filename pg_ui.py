@@ -84,64 +84,63 @@ class PgUi:
         global LAST_CARD_LOCATION
         global DISCARD_BUTTON_LOCATION
 
-        while self.game.turn < NUM_TURNS:
-            print("pls help")
-            for i in range(len(self.game.players)):
-                print("pls help player", i)
-                player = self.game.players[i]
-                hand = self.game.hands[(i + self.game.turn) % len(self.game.hands)]
-                self.draw_game(hand)
-                while True:
-                    events = pg.event.get()
-                    for event in events:
-                        if event.type == pg.QUIT:
-                            pg.quit()
-                            quit()
-                        elif event.type == pg.VIDEORESIZE:
-                            screen_dimension = pg.display.get_surface().get_size()
-                            HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
-                            LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
-                            DISCARD_BUTTON_LOCATION = (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
-                            print(screen_dimension)
-                            self.draw_game(hand)
-                            pg.display.update()
-                            pg.display.update()
-                        elif event.type == pg.MOUSEMOTION:
-                            self.highlight_card(hand)
-                        elif event.type == pg.MOUSEBUTTONDOWN:
-                            if pg.mouse.get_pos()[0] > DISCARD_BUTTON_LOCATION[0] and pg.mouse.get_pos()[0] < DISCARD_BUTTON_LOCATION[0] + DISCARD_BUTTON_SIZE[0] and pg.mouse.get_pos()[1] > DISCARD_BUTTON_LOCATION[1] and pg.mouse.get_pos()[1] < DISCARD_BUTTON_LOCATION[1] + DISCARD_BUTTON_SIZE[1]:
-                                if discard:
-                                    discard = False
-                                    self.draw_discard_button()
-                                else:
-                                    discard = True
-                                    self.draw_discard_button()
-                            for i in range(len(hand)):
-                                card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
-                                if pg.mouse.get_pos()[0] > card_location[0] and pg.mouse.get_pos()[0] < card_location[0] + HAND_CARD_SIZE[0] and pg.mouse.get_pos()[1] > card_location[1] and pg.mouse.get_pos()[1] < card_location[1] + HAND_CARD_SIZE[1]:
-                                    selected_card = hand[i]
-                                    if discard:
-                                        self.discard_card(player, hand, i)
-                                        self.draw_game(hand)
-                                        self.highlight_card(hand)
-                                        print("BREAK")
-                                        break
-                                    else:
-                                        self.select_card(player, hand, i)
-                                        self.draw_game(hand)
-                                        self.highlight_card(hand)
-                                        print("BREAK")
-                                        break
-                        break
+        # draw initial hand
+        self.draw_game()
+        self.run_event_loop()
+
+    def run_event_loop(self):
+        while True:
+            events = pg.event.get()
+            for event in events:
+                if event.type == pg.QUIT:
+                    pg.quit()
+                    quit()
+                elif event.type == pg.VIDEORESIZE:
+                    screen_dimension = pg.display.get_surface().get_size()
+                    HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
+                    LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+                    DISCARD_BUTTON_LOCATION = (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
+                    print(screen_dimension)
+                    self.draw_game()
+                    pg.display.update()
+                    pg.display.update()
+                elif event.type == pg.MOUSEMOTION:
+                    self.highlight_card()
+                elif event.type == pg.MOUSEBUTTONDOWN:
+                    if pg.mouse.get_pos()[0] > DISCARD_BUTTON_LOCATION[0] and pg.mouse.get_pos()[0] < DISCARD_BUTTON_LOCATION[0] + DISCARD_BUTTON_SIZE[0] and pg.mouse.get_pos()[1] > DISCARD_BUTTON_LOCATION[1] and pg.mouse.get_pos()[1] < DISCARD_BUTTON_LOCATION[1] + DISCARD_BUTTON_SIZE[1]:
+                        if discard:
+                            discard = False
+                            self.draw_discard_button()
+                        else:
+                            discard = True
+                            self.draw_discard_button()
+                    hand = self.game.current_player_hand()
+                    for i in range(len(hand)):
+                        card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+                        if pg.mouse.get_pos()[0] > card_location[0] and pg.mouse.get_pos()[0] < card_location[0] + HAND_CARD_SIZE[0] and pg.mouse.get_pos()[1] > card_location[1] and pg.mouse.get_pos()[1] < card_location[1] + HAND_CARD_SIZE[1]:
+                            if discard:
+                                self.discard_card(i)
+                                #self.draw_game()
+                                self.highlight_card()
+                                print("BREAK")
+                                break
+                            else:
+                                self.select_card(i)
+                                #self.draw_game()
+                                self.highlight_card()
+                                print("BREAK")
+                                break
+                break
         print("pls pls give much help")
 
     # def draw_money(self, money)
 
 
-    def highlight_card(self, hand):
+    def highlight_card(self):
         global card_highlighted
         global HIGHLIGHT_COLOR
         card_fails = 0
+        hand = self.game.current_player_hand()
         for i in range(len(hand)):
             card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
             if pg.mouse.get_pos()[0] > card_location[0] and pg.mouse.get_pos()[0] < card_location[0] + HAND_CARD_SIZE[0] and pg.mouse.get_pos()[1] > card_location[1] and pg.mouse.get_pos()[1] < card_location[1] + HAND_CARD_SIZE[1]:
@@ -163,10 +162,10 @@ class PgUi:
                         card_highlighted = 1
                         pg.display.update()
 
-    def draw_game(self, hand_cards):
+    def draw_game(self):
         print("drawing stuff")
         screen.fill(BACKRGOUND_COLOR)
-        self.draw_hand(hand_cards)
+        self.draw_hand()
         self.draw_discard_button()
 
     def draw_discard_button(self):
@@ -334,27 +333,25 @@ class PgUi:
         self.draw_hand_card_provides(card_location, card)
         self.draw_hand_card_cost(card, card_location)
 
-    def draw_hand(self, hand_cards):
+    def draw_hand(self):
+        hand_cards = self.game.current_player_hand()
         for i in range(len(hand_cards)):
             self.draw_card(hand_cards[i], i, hand_cards)
 
-    def discard_card(self, player, hand, selected_card_number):
+    def discard_card(self, selected_card_number):
+        hand = self.game.current_player_hand()
         print("discarrrrrrrrrrrrrrrrd")
         del hand[selected_card_number]
-        player.give_moneys_for_discard()
+        self.game.current_player.give_moneys_for_discard()
         print("MONEY: ", player.money)
-        self.game.turn += 1
+        self.game.current_player_finished()
 
-    def select_card(self, player, hand, selected_card_number):
+    def select_card(self, player, selected_card_number):
+        hand = self.game.current_player_hand()
         print("selecting a card!!!")
         selected_card = hand[selected_card_number]
-        if player.play_card(selected_card):
-            while True:
-                selected_card = hand[selected_card_number]
 
-                if player.play_card(selected_card):
-                    del hand[selected_card_number]
-                    self.game.turn += 1
-                    break
-                else:
-                    print("You do not have the required resources for that card.")
+        if player.play_card(selected_card):
+            del hand[selected_card_number]
+
+        self.game.current_player_finished()
