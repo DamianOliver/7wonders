@@ -1,15 +1,18 @@
 import random
 from enum import Enum
 
-NUM_PLAYERS = 1
-NUM_CARDS_PER_PLAYER = 4
+NUM_PLAYERS = 2
+NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
 class R(Enum):
     BRICK = "brick"
     SILK = "silk"
     STONE = "stone"
-    COAL = "coal"
+    ORE = "ore"
+    WOOD = "wood"
+    GLASS = "glass"
+    PAPYRUS = "papyrus"
 
     def __repr__(self):
         return str(self.value)
@@ -61,21 +64,22 @@ class Game:
 
     def create_deck(self):
         deck = [ \
-            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
+            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.BRICK, R.STONE, R.WOOD, R.ORE)]),
+            Card("Stones 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.STONE, R.STONE, R.STONE)], cost = [R.SILK]),
+            Card("Stones + Bricks 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)]),
+            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], cost = [R.SILK]),
+            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
+            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,),(R.STONE,)]),
+            Card("Guard Tower", C.MILITARY, num_shields = 2, cost = [R.STONE]),
             Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
             Card("University", C.SCIENCE, provides_sciences = ["science_symbol", "science_symbol"], cost = [R.BRICK, R.SILK]),
             Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,),(R.SILK,)]),
-            Card("Stones + Bricks 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)]),
-            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.BRICK,)]),
-            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.COAL,)]),
-            Card("Temple", C.CIVIC, points = 4, cost = [R.COAL]),
+            Card("Temple", C.CIVIC, points = 4, cost = [R.ORE]),
             Card("Scriptorium", C.SCIENCE, provides_sciences = ["science_symbol"]),
             Card("Scriptorium", C.SCIENCE, provides_sciences = ["science_symbol"]),
-            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
-            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
-            Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,)]),
+            Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)]),
             Card("Palace", C.CIVIC, points = 8, cost = [R.STONE, R.STONE])]
-        # random.shuffle(deck)
+        random.shuffle(deck)
         return deck
 
     def create_hands(self, deck):
@@ -101,6 +105,7 @@ class Player:
 
         if self.has_resources(selected_card.cost, resource_tuples):
             self.cards.append(selected_card)
+            print("self.cards: ", self.cards)
             return True
         else:
             return False
@@ -165,18 +170,19 @@ class Player:
     #             print(card.provides_resources)
 
 class Card:
-    def __init__( self, name, card_type, points = 0, provides_resources = [], cost = [], provides_sciences = [], num_shields = 0):
+    def __init__( self, name, card_type, points = 0, provides_resources = [], cost = [], provides_sciences = [], num_shields = 0, money_cost = 0):
         self.cost = cost
         self.points = points
         self.card_type = card_type
         self.name = name
         self.provides_resources = provides_resources
         self.provides_sciences = provides_sciences
-        self.num_sheilds = num_shields
+        self.num_shields = num_shields
+        self.money_cost = money_cost
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
         return "{}: Card Type: {}  Points = {}, Resources = {}, Science = {}, Shields = {}, Cost {}".format(
-            self.name, self.card_type, self.points, self.provides_resources, self.provides_sciences, self.num_sheilds, self.cost)
+            self.name, self.card_type, self.points, self.provides_resources, self.provides_sciences, self.num_shields, self.cost)
