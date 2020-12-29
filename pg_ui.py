@@ -89,10 +89,10 @@ class PgUi:
             for i in range(len(self.game.players)):
                 print("pls help player", i)
                 player = self.game.players[i]
-                hand = self.game.hands[(i + self.game.turn) % len(self.game.hands)] 
-                events = pg.event.get()
+                hand = self.game.hands[(i + self.game.turn) % len(self.game.hands)]
                 self.draw_game(hand)
                 while True:
+                    events = pg.event.get()
                     for event in events:
                         if event.type == pg.QUIT:
                             pg.quit()
@@ -102,7 +102,7 @@ class PgUi:
                             HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
                             LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
                             DISCARD_BUTTON_LOCATION = (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
-                            print(screen_dimension)  
+                            print(screen_dimension)
                             self.draw_game(hand)
                             pg.display.update()
                             pg.display.update()
@@ -179,7 +179,7 @@ class PgUi:
             pg.display.update()
         else:
             self.draw_cancel_button()
-            
+
 
     def draw_cancel_button(self):
         global CANCEL_BUTTON_LOCATION
@@ -224,7 +224,7 @@ class PgUi:
         if card.card_type == C.MILITARY:
             for i in range(card.num_shields):
                 print("mIlLiTAry")
-                shield = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\shield.png')
+                shield = pg.image.load('Images/shield.png')
                 shield = pg.transform.scale(shield, SHIELD_SIZE)
                 shield_pos = (card_location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / card.num_shields*(i+1/2) - SHIELD_SIZE[0]/2, card_location[1])
                 screen.blit(shield, (shield_pos[0], shield_pos[1]))
@@ -234,12 +234,12 @@ class PgUi:
         elif card.card_type == C.SCIENCE:
             for i in range(len(card.provides_sciences)):
                 print("science")
-                tablet = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\tablet.png')
+                tablet = pg.image.load('Images/tablet.png')
                 tablet = pg.transform.scale(tablet, SCIENCE_SYMBOL_SIZE)
                 tablet_pos = (card_location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_sciences)*(i+1/2) - SCIENCE_SYMBOL_SIZE[0]/2, card_location[1])
                 screen.blit(tablet, (tablet_pos[0], tablet_pos[1]))
         elif card.card_type == C.CIVIC:
-            points_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\civic_points.png')
+            points_image = pg.image.load('Images/civic_points.png')
             points_image = pg.transform.scale(points_image, CIVIC_POINTS_SIZE)
             points_image_pos = (card_location[0] + HAND_CARD_SIZE[0]/2 - CIVIC_POINTS_SIZE[0]/2, card_location[1])
             screen.blit(points_image, points_image_pos)
@@ -258,50 +258,50 @@ class PgUi:
                     resource_tuple = card.provides_resources[a]
                     for i in range(len(resource_tuple)):
                         if resource_tuple[i] == R.STONE:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\stone.png')
+                            resource_image = pg.image.load('Images/stone.png')
                         elif resource_tuple[i] == R.BRICK:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\brick.png')
+                            resource_image = pg.image.load('Images/brick.png')
                         elif resource_tuple[i] == R.ORE:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\ore.png')
+                            resource_image = pg.image.load('Images/ore.png')
                         elif resource_tuple[i] == R.WOOD:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\wood.png')
+                            resource_image = pg.image.load('Images/wood.png')
                         elif resource_tuple[i] == R.SILK:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\silk.png')
+                            resource_image = pg.image.load('Images/silk.png')
                         elif resource_tuple[i] == R.GLASS:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\glass.png')
+                            resource_image = pg.image.load('Images/glass.png')
                         elif resource_tuple[i] == R.PAPYRUS:
-                            resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\papyrus.png')
+                            resource_image = pg.image.load('Images/papyrus.png')
 
                         resource_image = pg.transform.scale(resource_image, choice_resource_hand_size)
                         resource_image_pos = (HAND_CARD_PROVIDES_MARGIN[0] + card_location[0] + (choice_resource_hand_size[0] + slash_size[0])*i, card_location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                         screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
                         if i != len(resource_tuple) - 1:
-                            slash = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\slash.png')
+                            slash = pg.image.load('Images/slash.png')
                             slash = pg.transform.scale(slash, (int(slash_size[0]), int(slash_size[1])))
                             slash_pos = (resource_image_pos[0] + choice_resource_hand_size[0], card_location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                             screen.blit(slash, (slash_pos[0], slash_pos[1]))
 
                 else:
                     if card.provides_resources[a] == (R.STONE,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\stone.png')
+                        resource_image = pg.image.load('Images/stone.png')
                     elif card.provides_resources[a] == (R.BRICK,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\brick.png')
+                        resource_image = pg.image.load('Images/brick.png')
                     elif card.provides_resources[a] == (R.ORE,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\ore.png')
+                        resource_image = pg.image.load('Images/ore.png')
                     elif card.provides_resources[a] == (R.WOOD,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\wood.png')
+                        resource_image = pg.image.load('Images/wood.png')
                     elif card.provides_resources[a] == (R.SILK,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\silk.png')
+                        resource_image = pg.image.load('Images/silk.png')
                     elif card.provides_resources[a] == (R.GLASS,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\glass.png')
+                        resource_image = pg.image.load('Images/glass.png')
                     elif card.provides_resources[a] == (R.PAPYRUS,):
-                        resource_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\papyrus.png')
+                        resource_image = pg.image.load('Images/papyrus.png')
                     else:
                         return
                     resource_image = pg.transform.scale(resource_image, PROVIDES_RESOURCE_ICON_SIZE)
                     resource_image_pos = (card_location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_resources)*(a+1/2) - PROVIDES_RESOURCE_ICON_SIZE[0]/2, card_location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                     screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
-                        
+
     def draw_hand_card_cost(self, card, card_location):
         if len(card.cost) > 0:
             rect_size = (HAND_RESOURCE_COST_SIZE[0]/2, (HAND_RESOURCE_COST_SIZE[1] + HAND_RESOURCE_COST_SPACING)*len(card.cost) + 3)
@@ -311,19 +311,19 @@ class PgUi:
                 cost = card.cost[i]
                 cost_pos = (card_location[0] + HAND_RESOURCE_COST_MARGIN[0], card_location[1] + HAND_RESOURCE_COST_MARGIN[1] + (HAND_RESOURCE_COST_SPACING + HAND_RESOURCE_COST_SIZE[1]) * i)
                 if cost == R.STONE:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\stone.png')
+                    cost_image = pg.image.load('Images/stone.png')
                 elif cost == R.ORE:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\ore.png')
+                    cost_image = pg.image.load('Images/ore.png')
                 elif cost == R.BRICK:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\brick.png')
+                    cost_image = pg.image.load('Images/brick.png')
                 elif cost == R.WOOD:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\wood.png')
+                    cost_image = pg.image.load('Images/wood.png')
                 elif cost == R.GLASS:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\glass.png')
+                    cost_image = pg.image.load('Images/glass.png')
                 elif cost == R.SILK:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\silk.png')
+                    cost_image = pg.image.load('Images/silk.png')
                 elif cost == R.PAPYRUS:
-                    cost_image = pg.image.load('C:\\Users\Damian\\7wonders\\Images\\papyrus.png')
+                    cost_image = pg.image.load('Images/papyrus.png')
                 cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
                 screen.blit(cost_image, cost_pos)
 
@@ -358,5 +358,3 @@ class PgUi:
                     break
                 else:
                     print("You do not have the required resources for that card.")
-
-    
