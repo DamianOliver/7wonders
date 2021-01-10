@@ -118,7 +118,7 @@ class PgUi:
                 elif event.type == pg.MOUSEMOTION:
                     self.highlight_card()
                 elif event.type == pg.MOUSEBUTTONDOWN:
-                    if pg.mouse.get_pos()[0] > DISCARD_BUTTON_LOCATION[0] and pg.mouse.get_pos()[0] < DISCARD_BUTTON_LOCATION[0] + DISCARD_BUTTON_SIZE[0] and pg.mouse.get_pos()[1] > DISCARD_BUTTON_LOCATION[1] and pg.mouse.get_pos()[1] < DISCARD_BUTTON_LOCATION[1] + DISCARD_BUTTON_SIZE[1]:
+                    if self.is_event_inside_discard_button():
                         if discard:
                             discard = False
                             self.draw_discard_button()
@@ -127,8 +127,7 @@ class PgUi:
                             self.draw_discard_button()
                     hand = self.game.current_player_hand()
                     for i in range(len(hand)):
-                        card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
-                        if pg.mouse.get_pos()[0] > card_location[0] and pg.mouse.get_pos()[0] < card_location[0] + HAND_CARD_SIZE[0] and pg.mouse.get_pos()[1] > card_location[1] and pg.mouse.get_pos()[1] < card_location[1] + HAND_CARD_SIZE[1]:
+                        if self.is_event_inside_card(i):
                             if discard:
                                 self.discard_card(i)
                                 #self.draw_game()
@@ -144,6 +143,24 @@ class PgUi:
                 break
         print("pls pls give much help")
 
+    def is_event_inside_card(self, card_index):
+        card_location = self.get_card_location(card_index)
+        return \
+            pg.mouse.get_pos()[0] > card_location[0] and \
+            pg.mouse.get_pos()[0] < card_location[0] + HAND_CARD_SIZE[0] and \
+            pg.mouse.get_pos()[1] > card_location[1] and \
+            pg.mouse.get_pos()[1] < card_location[1] + HAND_CARD_SIZE[1]
+
+    def get_card_location(self, i):
+        return ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+
+    def is_event_inside_discard_button(self):
+        return \
+            pg.mouse.get_pos()[0] > DISCARD_BUTTON_LOCATION[0] and \
+            pg.mouse.get_pos()[0] < DISCARD_BUTTON_LOCATION[0] + DISCARD_BUTTON_SIZE[0] and \
+            pg.mouse.get_pos()[1] > DISCARD_BUTTON_LOCATION[1] and \
+            pg.mouse.get_pos()[1] < DISCARD_BUTTON_LOCATION[1] + DISCARD_BUTTON_SIZE[1]
+
     # def draw_money(self, money)
 
 
@@ -153,8 +170,7 @@ class PgUi:
         card_fails = 0
         hand = self.game.current_player_hand()
         for i in range(len(hand)):
-            card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
-            if pg.mouse.get_pos()[0] > card_location[0] and pg.mouse.get_pos()[0] < card_location[0] + HAND_CARD_SIZE[0] and pg.mouse.get_pos()[1] > card_location[1] and pg.mouse.get_pos()[1] < card_location[1] + HAND_CARD_SIZE[1]:
+            if self.is_event_inside_card(i):
                 if hand[i] != card_highlighted:
                     if discard:
                         HIGHLIGHT_COLOR = DISCARD_HIGHLIGHT_COLOR
@@ -162,9 +178,15 @@ class PgUi:
                         HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
                     self.draw_game()
                     card_highlighted = hand[i]
-                    pg.draw.rect(screen, pg.Color(HIGHLIGHT_COLOR), pg.Rect((card_location[0] - HIGHLIGHT_DISTANCE/2, card_location[1] - HIGHLIGHT_DISTANCE/2), (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)), border_radius=int(HIGHLIGHT_ROUND_DISTANCE))
+                    card_location = self.get_card_location(i)
+                    highlight_rect_bounds = (card_location[0] - HIGHLIGHT_DISTANCE/2, card_location[1] - HIGHLIGHT_DISTANCE/2), \
+                                             (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)
+                    pg.draw.rect(screen, 
+                                 pg.Color(HIGHLIGHT_COLOR), 
+                                 pg.Rect(highlight_rect_bounds), 
+                                 border_radius=int(HIGHLIGHT_ROUND_DISTANCE))
                     self.draw_card(hand[i], i, hand)
-                    pg.display.update((card_location[0] - HIGHLIGHT_DISTANCE/2, card_location[1] - HIGHLIGHT_DISTANCE/2), (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE))
+                    pg.display.update(highlight_rect_bounds)
             else:
                 card_fails += 1
                 if card_fails == len(hand):
@@ -181,7 +203,7 @@ class PgUi:
 
     def draw_discard_button(self):
         if not discard:
-            pg.draw.rect(screen, pg.Color(DISCARD_BUTTON_COLOR), pg.Rect((DISCARD_BUTTON_LOCATION[0], DISCARD_BUTTON_LOCATION[1]), (DISCARD_BUTTON_SIZE[0], DISCARD_BUTTON_SIZE[1])), border_radius=int(DISCARD_BUTTON_ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(DISCARD_BUTTON_COLOR), pg.Rect(DISCARD_BUTTON_LOCATION, DISCARD_BUTTON_SIZE), border_radius=int(DISCARD_BUTTON_ROUND_DISTANCE))
             discard_font = pg.font.SysFont("georgia", DISCARD_FONT_SIZE)
             discard_text = discard_font.render("Discard", True, (0, 0, 0))
             discard_text_rect = discard_text.get_rect(center = (DISCARD_BUTTON_LOCATION[0] + DISCARD_BUTTON_SIZE[0]/2, DISCARD_BUTTON_LOCATION[1] + DISCARD_BUTTON_SIZE[1]/2))
@@ -194,7 +216,7 @@ class PgUi:
     def draw_cancel_button(self):
         global CANCEL_BUTTON_LOCATION
         CANCEL_BUTTON_LOCATION = DISCARD_BUTTON_LOCATION
-        pg.draw.rect(screen, pg.Color(CANCEL_BUTTON_COLOR), pg.Rect((CANCEL_BUTTON_LOCATION[0], CANCEL_BUTTON_LOCATION[1]), (CANCEL_BUTTON_SIZE[0], CANCEL_BUTTON_SIZE[1])), border_radius=int(CANCEL_BUTTON_ROUND_DISTANCE))
+        pg.draw.rect(screen, pg.Color(CANCEL_BUTTON_COLOR), pg.Rect(CANCEL_BUTTON_LOCATION, CANCEL_BUTTON_SIZE), border_radius=int(CANCEL_BUTTON_ROUND_DISTANCE))
         cancel_font = pg.font.SysFont("georgia", CANCEL_FONT_SIZE)
         cancel_text = cancel_font.render("Cancel", True, (0, 0, 0))
         cancel_text_rect = cancel_text.get_rect(center = (CANCEL_BUTTON_LOCATION[0] + CANCEL_BUTTON_SIZE[0]/2, CANCEL_BUTTON_LOCATION[1] + CANCEL_BUTTON_SIZE[1]/2))
@@ -204,19 +226,19 @@ class PgUi:
     def draw_hand_card_background(self, card, card_location):
         print(card.card_type)
         if card.card_type == C.MILITARY:
-            pg.draw.rect(screen, pg.Color(MILITARY_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(MILITARY_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
         elif card.card_type == C.SCIENCE:
-            pg.draw.rect(screen, pg.Color(SCIENCE_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(SCIENCE_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
         elif card.card_type == C.RAW_R:
-            pg.draw.rect(screen, pg.Color(RAW_RESOURCE_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(RAW_RESOURCE_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
         elif card.card_type == C.COMMERCIAL:
-            pg.draw.rect(screen, pg.Color(COMMERCIAL_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(COMMERCIAL_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
         elif card.card_type == C.MFG_R:
-            pg.draw.rect(screen, pg.Color(MANUFACTORED_RESOURCE_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(MANUFACTORED_RESOURCE_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
         elif card.card_type == C.CIVIC:
-            pg.draw.rect(screen, pg.Color(CIVIC_COLOR), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(CIVIC_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
         else:
-            pg.draw.rect(screen, pg.Color(0, 0, 0), pg.Rect((card_location[0], card_location[1]), (HAND_CARD_SIZE[0], HAND_CARD_SIZE[1])), border_radius=int(ROUND_DISTANCE))
+            pg.draw.rect(screen, pg.Color(0, 0, 0), pg.Rect(card_location), (HAND_CARD_SIZE), border_radius=int(ROUND_DISTANCE))
 
     def draw_hand_card_name(self, name, card_location):
         hand_card_name_font = pg.font.SysFont('georgia', HAND_CARD_NAME_FONT_SIZE)
@@ -314,7 +336,7 @@ class PgUi:
             raise Exception(f"Provides Not Found: {provides}")
 
     def draw_card(self, card, i, hand_cards):
-        card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+        card_location = self.get_card_location(i)
         self.draw_hand_card_background(card, card_location)
         self.draw_hand_card_name(card.name ,card_location)
         self.draw_hand_card_provides(card_location, card)
