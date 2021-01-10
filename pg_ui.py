@@ -21,6 +21,14 @@ HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
 DISCARD_BUTTON_COLOR = (230, 20, 20)
 WONDER_COLOR = (20, 20, 230)
 
+CARD_COLORS = {
+    C.MILITARY: MILITARY_COLOR,
+    C.SCIENCE: SCIENCE_COLOR,
+    C.RAW_R: RAW_RESOURCE_COLOR,
+    C.COMMERCIAL: COMMERCIAL_COLOR,
+    C.CIVIC: CIVIC_COLOR,
+}
+
 HAND_CARD_TEXT_MARGIN = 10
 HAND_CARD_NAME_FONT_SIZE = 20
 
@@ -67,6 +75,7 @@ CANCEL_BUTTON_MARGIN = (20, 0)
 
 HIGHLIGHT_DISTANCE = 10
 HIGHLIGHT_ROUND_DISTANCE = 4
+
 
 
 card_highlighted = 1
@@ -181,9 +190,9 @@ class PgUi:
                     card_location = self.get_card_location(i)
                     highlight_rect_bounds = (card_location[0] - HIGHLIGHT_DISTANCE/2, card_location[1] - HIGHLIGHT_DISTANCE/2), \
                                              (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)
-                    pg.draw.rect(screen, 
-                                 pg.Color(HIGHLIGHT_COLOR), 
-                                 pg.Rect(highlight_rect_bounds), 
+                    pg.draw.rect(screen,
+                                 pg.Color(HIGHLIGHT_COLOR),
+                                 pg.Rect(highlight_rect_bounds),
                                  border_radius=int(HIGHLIGHT_ROUND_DISTANCE))
                     self.draw_card(hand[i], i, hand)
                     pg.display.update(highlight_rect_bounds)
@@ -225,20 +234,9 @@ class PgUi:
 
     def draw_hand_card_background(self, card, card_location):
         print(card.card_type)
-        if card.card_type == C.MILITARY:
-            pg.draw.rect(screen, pg.Color(MILITARY_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
-        elif card.card_type == C.SCIENCE:
-            pg.draw.rect(screen, pg.Color(SCIENCE_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
-        elif card.card_type == C.RAW_R:
-            pg.draw.rect(screen, pg.Color(RAW_RESOURCE_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
-        elif card.card_type == C.COMMERCIAL:
-            pg.draw.rect(screen, pg.Color(COMMERCIAL_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
-        elif card.card_type == C.MFG_R:
-            pg.draw.rect(screen, pg.Color(MANUFACTORED_RESOURCE_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
-        elif card.card_type == C.CIVIC:
-            pg.draw.rect(screen, pg.Color(CIVIC_COLOR), pg.Rect((card_location), (HAND_CARD_SIZE)), border_radius=int(ROUND_DISTANCE))
-        else:
-            pg.draw.rect(screen, pg.Color(0, 0, 0), pg.Rect(card_location), (HAND_CARD_SIZE), border_radius=int(ROUND_DISTANCE))
+        card_rect = pg.Rect(card_location, HAND_CARD_SIZE)
+        color = CARD_COLORS.get(card.card_type, (0, 0, 0))
+        pg.draw.rect(screen, pg.Color(color), pg.Rect(card_location, HAND_CARD_SIZE), border_radius=int(ROUND_DISTANCE))
 
     def draw_hand_card_name(self, name, card_location):
         hand_card_name_font = pg.font.SysFont('georgia', HAND_CARD_NAME_FONT_SIZE)
