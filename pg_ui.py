@@ -99,15 +99,21 @@ class PgUi:
             for event in events:
                 if event.type == pg.QUIT:
                     pg.quit()
-                    quit()
+                    print("NO DON'T QUIT")
+                    return
+                if event.type == pg.WINDOWEVENT and event.__dict__["event"] == pg.WINDOWEVENT_CLOSE:
+                    pg.quit()
+                    print("NO DON'T QUIT")
+                    return
                 elif event.type == pg.VIDEORESIZE:
+                    print("pls resize")
                     screen_dimension = pg.display.get_surface().get_size()
                     HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
                     LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+                    print("hand margin: ", HAND_MARGIN)
                     DISCARD_BUTTON_LOCATION = (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
                     print(screen_dimension)
                     self.draw_game()
-                    pg.display.update()
                     pg.display.update()
                 elif event.type == pg.MOUSEMOTION:
                     self.highlight_card()
@@ -261,21 +267,7 @@ class PgUi:
                     slash_size = (choice_resource_hand_size[0]/2.5, choice_resource_hand_size[1])
                     resource_tuple = card.provides_resources[a]
                     for i in range(len(resource_tuple)):
-                        if resource_tuple[i] == R.STONE:
-                            resource_image = pg.image.load('Images/stone.png')
-                        elif resource_tuple[i] == R.BRICK:
-                            resource_image = pg.image.load('Images/brick.png')
-                        elif resource_tuple[i] == R.ORE:
-                            resource_image = pg.image.load('Images/ore.png')
-                        elif resource_tuple[i] == R.WOOD:
-                            resource_image = pg.image.load('Images/wood.png')
-                        elif resource_tuple[i] == R.SILK:
-                            resource_image = pg.image.load('Images/silk.png')
-                        elif resource_tuple[i] == R.GLASS:
-                            resource_image = pg.image.load('Images/glass.png')
-                        elif resource_tuple[i] == R.PAPYRUS:
-                            resource_image = pg.image.load('Images/papyrus.png')
-
+                        resource_image = self.load_image(resource_tuple[i])
                         resource_image = pg.transform.scale(resource_image, choice_resource_hand_size)
                         resource_image_pos = (HAND_CARD_PROVIDES_MARGIN[0] + card_location[0] + (choice_resource_hand_size[0] + slash_size[0])*i, card_location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                         screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
@@ -286,22 +278,7 @@ class PgUi:
                             screen.blit(slash, (slash_pos[0], slash_pos[1]))
 
                 else:
-                    if card.provides_resources[a] == (R.STONE,):
-                        resource_image = pg.image.load('Images/stone.png')
-                    elif card.provides_resources[a] == (R.BRICK,):
-                        resource_image = pg.image.load('Images/brick.png')
-                    elif card.provides_resources[a] == (R.ORE,):
-                        resource_image = pg.image.load('Images/ore.png')
-                    elif card.provides_resources[a] == (R.WOOD,):
-                        resource_image = pg.image.load('Images/wood.png')
-                    elif card.provides_resources[a] == (R.SILK,):
-                        resource_image = pg.image.load('Images/silk.png')
-                    elif card.provides_resources[a] == (R.GLASS,):
-                        resource_image = pg.image.load('Images/glass.png')
-                    elif card.provides_resources[a] == (R.PAPYRUS,):
-                        resource_image = pg.image.load('Images/papyrus.png')
-                    else:
-                        return
+                    resource_image = self.load_image(card.provides_resources[a][0])
                     resource_image = pg.transform.scale(resource_image, PROVIDES_RESOURCE_ICON_SIZE)
                     resource_image_pos = (card_location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_resources)*(a+1/2) - PROVIDES_RESOURCE_ICON_SIZE[0]/2, card_location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                     screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
@@ -314,22 +291,27 @@ class PgUi:
             for i in range(len(card.cost)):
                 cost = card.cost[i]
                 cost_pos = (card_location[0] + HAND_RESOURCE_COST_MARGIN[0], card_location[1] + HAND_RESOURCE_COST_MARGIN[1] + (HAND_RESOURCE_COST_SPACING + HAND_RESOURCE_COST_SIZE[1]) * i)
-                if cost == R.STONE:
-                    cost_image = pg.image.load('Images/stone.png')
-                elif cost == R.ORE:
-                    cost_image = pg.image.load('Images/ore.png')
-                elif cost == R.BRICK:
-                    cost_image = pg.image.load('Images/brick.png')
-                elif cost == R.WOOD:
-                    cost_image = pg.image.load('Images/wood.png')
-                elif cost == R.GLASS:
-                    cost_image = pg.image.load('Images/glass.png')
-                elif cost == R.SILK:
-                    cost_image = pg.image.load('Images/silk.png')
-                elif cost == R.PAPYRUS:
-                    cost_image = pg.image.load('Images/papyrus.png')
+                cost_image = self.load_image(cost)
                 cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
                 screen.blit(cost_image, cost_pos)
+
+    def load_image(self, provides):
+        if provides == R.STONE:
+            return pg.image.load('Images/stone.png')
+        elif provides == R.ORE:
+            return pg.image.load('Images/ore.png')
+        elif provides == R.BRICK:
+            return pg.image.load('Images/brick.png')
+        elif provides == R.WOOD:
+            return pg.image.load('Images/wood.png')
+        elif provides == R.GLASS:
+            return pg.image.load('Images/glass.png')
+        elif provides == R.SILK:
+            return pg.image.load('Images/silk.png')
+        elif provides == R.PAPYRUS:
+            return pg.image.load('Images/papyrus.png')
+        else:
+            raise Exception(f"Provides Not Found: {provides}")
 
     def draw_card(self, card, i, hand_cards):
         card_location = ((HAND_MARGIN + i * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
