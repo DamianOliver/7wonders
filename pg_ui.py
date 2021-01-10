@@ -89,6 +89,11 @@ class PgUi:
         self.run_event_loop()
 
     def run_event_loop(self):
+        global HAND_MARGIN
+        global DISCARD_BUTTON_LOCATION
+        global screen_dimension
+        global discard
+
         while True:
             events = pg.event.get()
             for event in events:
@@ -149,7 +154,7 @@ class PgUi:
                         HIGHLIGHT_COLOR = DISCARD_HIGHLIGHT_COLOR
                     else:
                         HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
-                    self.draw_game(hand)
+                    self.draw_game()
                     card_highlighted = hand[i]
                     pg.draw.rect(screen, pg.Color(HIGHLIGHT_COLOR), pg.Rect((card_location[0] - HIGHLIGHT_DISTANCE/2, card_location[1] - HIGHLIGHT_DISTANCE/2), (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)), border_radius=int(HIGHLIGHT_ROUND_DISTANCE))
                     self.draw_card(hand[i], i, hand)
@@ -158,7 +163,7 @@ class PgUi:
                 card_fails += 1
                 if card_fails == len(hand):
                     if card_highlighted != 1:
-                        self.draw_game(hand)
+                        self.draw_game()
                         card_highlighted = 1
                         pg.display.update()
 
@@ -342,16 +347,16 @@ class PgUi:
         hand = self.game.current_player_hand()
         print("discarrrrrrrrrrrrrrrrd")
         del hand[selected_card_number]
-        self.game.current_player.give_moneys_for_discard()
+        self.game.current_player_index.give_moneys_for_discard()
         print("MONEY: ", player.money)
         self.game.current_player_finished()
 
-    def select_card(self, player, selected_card_number):
+    def select_card(self, selected_card_number):
         hand = self.game.current_player_hand()
         print("selecting a card!!!")
         selected_card = hand[selected_card_number]
 
-        if player.play_card(selected_card):
+        if self.game.current_player().play_card(selected_card):
             del hand[selected_card_number]
 
         self.game.current_player_finished()

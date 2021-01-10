@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 
-NUM_PLAYERS = 2
+NUM_PLAYERS = 3
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -37,21 +37,22 @@ class C(Enum):
 class Game:
     def __init__(self):
         self.turn = 0
-        self.current_player = 0
+        self.current_player_index = 0
         self.players = [Player(i) for i in range(NUM_PLAYERS)]
         self.hands = []
         self.deck = self.create_deck()
         self.hands = self.create_hands(self.deck)
 
     def current_player_finished(self):
-        self.current_player += 1
-        if self.current_player >= len(self.players):
+        self.current_player_index += 1
+        if self.current_player_index >= len(self.players):
             self.turn += 1
+            self.current_player_index = self.current_player_index % len(self.players)
 
     def current_player_hand(self):
         # Change starting index in hands array with every turn, so that players get a diffent hand
         # on each turn.
-        return self.hands[(self.current_player + self.turn) % len(self.hands)]
+        return self.hands[(self.current_player_index + self.turn) % len(self.hands)]
 
     def player_right_left(self, player_index):
         if player_index == 0:
@@ -62,8 +63,11 @@ class Game:
             player_left = self.players[player_index - 1]
         else:
             player_right = self.players[player_index + 1]
-            player_left = self.player_indexplayers[ - 1]
+            player_left = self.players[player_index - 1]
         return player_right, player_left
+
+    def current_player(self):
+        return self.players[self.current_player_index]
 
     def print_player_cards(self):
         for player in self.players:
