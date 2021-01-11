@@ -92,11 +92,12 @@ discard = False
 class PgUi:
     def __init__(self):
         self.game = Game()
-        self.controller = GameController(self.game)
+        self.board = Board()
+        self.controller = GameController(self.game, self.board)
         self.init_views()
 
     def init_views(self):
-        self.game_view = GameView(self.game, self.controller)
+        self.game_view = GameView(self.game, self.board, self.controller)
 
     def play(self):
         global card_highlighted
@@ -120,6 +121,11 @@ class PgUi:
             events = pg.event.get()
             for event in events:
                 if self.game_view.handle_event(event):
+                    if self.board.needs_redraw:
+                        self.draw_game()
+                        pg.display.update()
+                        self.board.needs_redraw = False
+
                     continue
                 elif event.type == pg.QUIT:
                     pg.quit()
@@ -139,8 +145,6 @@ class PgUi:
                     print(screen_dimension)
                     self.draw_game()
                     pg.display.update()
-                # elif event.type == pg.MOUSEMOTION:
-                #     self.highlight_card()
                 elif event.type == pg.MOUSEBUTTONDOWN:
                     if self.is_event_inside_discard_button():
                         if discard:
@@ -150,20 +154,6 @@ class PgUi:
                             discard = True
                             self.draw_discard_button()
                     hand = self.game.current_player_hand()
-                    # for i in range(len(hand)):
-                        # if self.is_event_inside_card(i):
-                        #     if discard:
-                        #         self.discard_card(i)
-                        #         #self.draw_game()
-                        #         self.highlight_card()
-                        #         print("BREAK")
-                        #         break
-                        #     else:
-                        #         self.select_card(i)
-                        #         #self.draw_game()
-                        #         self.highlight_card()
-                        #         print("BREAK")
-                        #         break
 
     def is_event_inside_discard_button(self):
         return \
@@ -173,37 +163,6 @@ class PgUi:
             pg.mouse.get_pos()[1] < DISCARD_BUTTON_LOCATION[1] + DISCARD_BUTTON_SIZE[1]
 
     # def draw_money(self, money)
-
-    def highlight_card(self):
-        global card_highlighted
-        global HIGHLIGHT_COLOR
-        card_fails = 0
-        hand = self.game.current_player_hand()
-        for i in range(len(hand)):
-            if self.is_event_inside_card(i):
-                if hand[i] != card_highlighted:
-                    if discard:
-                        HIGHLIGHT_COLOR = DISCARD_HIGHLIGHT_COLOR
-                    else:
-                        HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
-                    self.draw_game()
-                    card_highlighted = hand[i]
-                    card_location = self.get_card_location(i)
-                    highlight_rect_bounds = (card_location[0] - HIGHLIGHT_DISTANCE/2, card_location[1] - HIGHLIGHT_DISTANCE/2), \
-                                             (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)
-                    pg.draw.rect(screen,
-                                 pg.Color(HIGHLIGHT_COLOR),
-                                 pg.Rect(highlight_rect_bounds),
-                                 border_radius=int(HIGHLIGHT_ROUND_DISTANCE))
-                    self.draw_card(hand[i], i, hand)
-                    pg.display.update(highlight_rect_bounds)
-            else:
-                card_fails += 1
-                if card_fails == len(hand):
-                    if card_highlighted != 1:
-                        self.draw_game()
-                        card_highlighted = 1
-                        pg.display.update()
 
     def draw_game(self):
         print("drawing stuff")
@@ -233,6 +192,35 @@ class PgUi:
         screen.blit(cancel_text, cancel_text_rect)
         pg.display.update()
 
+class Board:
+    def __init__(self):
+        self.discard = False
+        self.highlight_card_index = -1
+        self.needs_redraw = False
+
+    def is_hand_card_highlighted(self, card_index):
+        return self.highlight_card_index == card_index
+
+    def update_hand_card_highlight(self, card_index):
+        if self.highlight_card_index != card_index:
+            self.highlight_card_index = card_index
+            self.needs_redraw = True
+
+class GameController:
+    def __init__(self, game, board):
+        self.game = game
+        self.board = board
+
+    def on_hand_card_mouse_over(self, hand_card_index):
+        self.board.update_hand_card_highlight(hand_card_index)
+
+    def on_hand_card_mouse_down(self, hand_card_index):
+        if self.board.discard:
+            self.discard_card(hand_card_index)
+        else:
+            self.select_card(hand_card_index)
+        return
+
     def discard_card(self, selected_card_number):
         hand = self.game.current_player_hand()
         print("discarrrrrrrrrrrrrrrrd")
@@ -251,19 +239,10 @@ class PgUi:
 
         self.game.current_player_finished()
 
-class GameController:
-    def __init__(self, game):
-        self.game = game
-
-    def on_hand_card_mouse_over(self, hand_card_index):
-        return
-
-    def on_hand_card_mouse_down(self, hand_card_index):
-        return
 
 class GameView:
-    def __init__(self, game, controller):
-        self.hand_view = HandView(game, controller)
+    def __init__(self, game, board, controller):
+        self.hand_view = HandView(game, board, controller)
 
     def handle_event(self, event):
         return self.hand_view.handle_event(event)
@@ -272,9 +251,10 @@ class GameView:
         self.hand_view.draw()
 
 class HandView:
-    def __init__(self, game, controller, max_num_cards=NUM_CARDS_PER_PLAYER):
+    def __init__(self, game, board, controller, max_num_cards=NUM_CARDS_PER_PLAYER):
         self.game = game
-        self.card_views = [CardView(game, controller, i) for i in range(max_num_cards)]
+        self.controller = controller
+        self.card_views = [CardView(game, board, controller, i) for i in range(max_num_cards)]
 
     def draw(self):
         hand_cards = self.game.current_player_hand()
@@ -286,11 +266,19 @@ class HandView:
         for i in range(len(hand_cards)):
             if self.card_views[i].handle_event(event):
                 return True
+
+        if event.type == pg.MOUSEMOTION:
+            # None of the cards consumed the mouse-motiokn event, so the event
+            # was outside of any cards bounds.  And should reset the highlight
+            # card.
+            self.controller.on_hand_card_mouse_over(-1)
+            return True
         return False
 
 class CardView:
-    def __init__(self, game, controller, hand_card_index):
+    def __init__(self, game, board, controller, hand_card_index):
         self.game = game
+        self.board = board
         self.controller = controller
         self.hand_card_index = hand_card_index
         self.location = self.calc_location(hand_card_index)
@@ -299,7 +287,6 @@ class CardView:
         return ((HAND_MARGIN + card_index * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
 
     def handle_event(self, event):
-
         if self.is_event_inside_card():
             if event.type == pg.MOUSEMOTION:
                 self.controller.on_hand_card_mouse_over(self.hand_card_index)
@@ -318,6 +305,9 @@ class CardView:
 
     def draw(self):
         card = self.game.current_player_hand()[self.hand_card_index]
+
+        if self.board.is_hand_card_highlighted(self.hand_card_index):
+            self.draw_highlight()
         self.draw_hand_card_background(card)
         self.draw_hand_card_name(card.name)
         self.draw_hand_card_provides(card)
@@ -405,6 +395,15 @@ class CardView:
                 cost_image = self.load_resource_image(resource=cost)
                 cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
                 screen.blit(cost_image, cost_pos)
+
+    def draw_highlight(self):
+        highlight_color = DISCARD_HIGHLIGHT_COLOR if self.board.discard else PLAY_HIGHLIGHT_COLOR
+        highlight_rect_bounds = (self.location[0] - HIGHLIGHT_DISTANCE/2, self.location[1] - HIGHLIGHT_DISTANCE/2), \
+                                 (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)
+        pg.draw.rect(screen,
+                     pg.Color(highlight_color),
+                     pg.Rect(highlight_rect_bounds),
+                     border_radius=int(HIGHLIGHT_ROUND_DISTANCE))
 
     def load_resource_image(self, resource):
         return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
