@@ -1,6 +1,10 @@
 from game import Game
 import pygame as pg
 
+# Controller reacts to events and modifies model (Board)
+
+# Model holds information and logic on how states change
+
 class Board:
     def __init__(self):
         self.needs_redraw = False
@@ -37,10 +41,18 @@ class GameController:
         hand = self.game.current_player_hand()
         print("discarrrrrrrrrrrrrrrrd")
         del hand[selected_card_number]
-        self.game.current_player_index.give_moneys_for_discard()
-        print("MONEY: ", player.money)
+        self.game.current_player().give_moneys_for_discard()
+        print("MONEY: ", self.game.current_player().money)
         self.game.current_player_finished()
         self.board.request_redraw()
+
+    def on_discard_button_pressed(self):
+        if not self.board.discard:
+            self.board.discard = True
+            self.board.request_redraw()
+        else:
+            self.board.discard = False
+            self.board.request_redraw()
 
     def select_card(self, selected_card_number):
         hand = self.game.current_player_hand()

@@ -9,7 +9,8 @@ class CmdUi:
             print("turn {}".format(self.game.turn))
 
             for i in range(len(self.game.players)):
-                player = self.game.players[i]
+                
+                 = self.game.players[i]
                 hand = self.game.hands[(i + self.game.turn) % len(self.game.hands)] 
                 print("  Player {}".format(player.player_number))
                 player.print_cards()

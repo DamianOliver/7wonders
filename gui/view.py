@@ -2,6 +2,8 @@ from game import Game, C, R, NUM_CARDS_PER_PLAYER
 import pygame as pg
 from gui.controller import GameController, Board
 
+# display only and takes events
+
 screen_dimension = (1440, 1024)
 pg.init()
 screen = pg.display.set_mode((screen_dimension), pg.RESIZABLE)
@@ -26,6 +28,7 @@ CARD_COLORS = {
     C.RAW_R: RAW_RESOURCE_COLOR,
     C.COMMERCIAL: COMMERCIAL_COLOR,
     C.CIVIC: CIVIC_COLOR,
+    C.MFG_R: MANUFACTORED_RESOURCE_COLOR,
 }
 
 HAND_CARD_TEXT_MARGIN = 10
@@ -52,20 +55,15 @@ HAND_CARD_SIZE = (144, 250)
 HAND_SPACING = 20
 HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*NUM_CARDS_PER_PLAYER + HAND_SPACING)/2
 
-LAST_CARD_LOCATION = ((HAND_MARGIN + (NUM_CARDS_PER_PLAYER - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
-
 DISCARD_BUTTON_SIZE = (100, 50)
 DISCARD_BUTTON_COLOR = (240, 20, 20)
 DISCARD_BUTTON_ROUND_DISTANCE = 8
 DISCARD_BUTTON_MARGIN = (20, 0)
 DISCARD_FONT_SIZE = 20
 
-DISCARD_BUTTON_LOCATION = (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
-
 CANCEL_BUTTON_COLOR = (250, 0, 0)
 CANCEL_BUTTON_SIZE = DISCARD_BUTTON_SIZE
 CANCEL_BUTTON_ROUND_DISTANCE = DISCARD_BUTTON_ROUND_DISTANCE
-CANCEL_BUTTON_LOCATION = DISCARD_BUTTON_LOCATION
 CANCEL_FONT_SIZE = 20
 CANCEL_BUTTON_MARGIN = (20, 0)
 
@@ -106,7 +104,8 @@ class GameView(View):
     def __init__(self, game, board, controller):
         super().__init__(game, board, controller)
         self.hand_view = HandView(game, board, controller)
-        self.set_children([self.hand_view])
+        self.discard_button_view = DiscardButtonView(game, board, controller)
+        self.set_children([self.hand_view, self.discard_button_view])
 
 class HandView(View):
     def __init__(self, game, board, controller, max_num_cards=NUM_CARDS_PER_PLAYER):
@@ -126,7 +125,7 @@ class HandView(View):
                 return True
 
         if event.type == pg.MOUSEMOTION:
-            # None of the cards consumed the mouse-motiokn event, so the event
+            # None of the cards consumed the mouse-motion event, so the event
             # was outside of any cards bounds.  And should reset the highlight
             # card.
             self.controller.on_hand_card_mouse_over(-1)
@@ -147,7 +146,7 @@ class CardView(View):
             if event.type == pg.MOUSEMOTION:
                 self.controller.on_hand_card_mouse_over(self.hand_card_index)
                 return True
-            elif event.type == pg.MOUSEBUTTONDOWN:
+            elif event.type == pg.MOUSEBUTTONUP:
                 self.controller.on_hand_card_mouse_down(self.hand_card_index)
                 return True
         return False
@@ -263,3 +262,53 @@ class CardView(View):
 
     def load_resource_image(self, resource):
         return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
+
+class DiscardButtonView(View):
+    def __init__(self, game, board, controller):
+        super().__init__(game, board, controller)
+        self.set_children([])
+
+    def calc_location(self):
+        hand = self.game.current_player_hand()
+        LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+        return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
+
+    def draw(self):
+        if not self.board.discard:
+            self.draw_discard_button()
+        else:
+            self.draw_cancel_button()
+
+    def draw_discard_button(self):
+        location = self.calc_location()
+        pg.draw.rect(screen, pg.Color(DISCARD_BUTTON_COLOR), pg.Rect(location, DISCARD_BUTTON_SIZE), border_radius=int(DISCARD_BUTTON_ROUND_DISTANCE))
+        discard_font = pg.font.SysFont("georgia", DISCARD_FONT_SIZE)
+        discard_text = discard_font.render("Discard", True, (0, 0, 0))
+        discard_text_rect = discard_text.get_rect(center = (location[0] + DISCARD_BUTTON_SIZE[0]/2, location[1] + DISCARD_BUTTON_SIZE[1]/2))
+        screen.blit(discard_text, discard_text_rect)
+
+    def draw_cancel_button(self):
+        location = self.calc_location()
+        pg.draw.rect(screen, pg.Color(CANCEL_BUTTON_COLOR), pg.Rect(location, CANCEL_BUTTON_SIZE), border_radius=int(CANCEL_BUTTON_ROUND_DISTANCE))
+        cancel_font = pg.font.SysFont("georgia", CANCEL_FONT_SIZE)
+        cancel_text = cancel_font.render("Cancel", True, (0, 0, 0))
+        cancel_text_rect = cancel_text.get_rect(center = (location[0] + CANCEL_BUTTON_SIZE[0]/2, location[1] + CANCEL_BUTTON_SIZE[1]/2))
+        screen.blit(cancel_text, cancel_text_rect)
+
+    def is_event_inside_discard_button(self):
+        location = self.calc_location()
+        return \
+            pg.mouse.get_pos()[0] > location[0] and \
+            pg.mouse.get_pos()[0] < location[0] + DISCARD_BUTTON_SIZE[0] and \
+            pg.mouse.get_pos()[1] > location[1] and \
+            pg.mouse.get_pos()[1] < location[1] + DISCARD_BUTTON_SIZE[1]
+    
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            if self.is_event_inside_discard_button():
+                self.controller.on_discard_button_pressed()
+                return True
+        return False
+
+
+
