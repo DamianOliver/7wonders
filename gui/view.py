@@ -4,9 +4,9 @@ from gui.controller import GameController, Board
 
 # display only and takes events
 
-screen_dimension = (1440, 1024)
+screen = pg.display.set_mode(( (1440, 1000)), pg.RESIZABLE)
+
 pg.init()
-screen = pg.display.set_mode((screen_dimension), pg.RESIZABLE)
 
 BACKRGOUND_COLOR = (110, 60, 40)
 MILITARY_COLOR = (220, 50, 50)
@@ -20,7 +20,6 @@ PLAY_HIGHLIGHT_COLOR = (255, 255, 0)
 DISCARD_HIGHLIGHT_COLOR = (255, 40, 40)
 HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
 DISCARD_BUTTON_COLOR = (230, 20, 20)
-WONDER_COLOR = (20, 20, 230)
 
 CARD_COLORS = {
     C.MILITARY: MILITARY_COLOR,
@@ -36,7 +35,6 @@ HAND_CARD_NAME_FONT_SIZE = 20
 
 HAND_CARD_PROVIDES_MARGIN = (25, 4)
 
-HAND_SPACING = screen_dimension[0]/30
 ROUND_DISTANCE = 5
 
 # for hand
@@ -53,7 +51,6 @@ HAND_RESOURCE_COST_SIZE = (17, 17)
 
 HAND_CARD_SIZE = (144, 250)
 HAND_SPACING = 20
-HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*NUM_CARDS_PER_PLAYER + HAND_SPACING)/2
 
 DISCARD_BUTTON_SIZE = (100, 50)
 DISCARD_BUTTON_COLOR = (240, 20, 20)
@@ -96,9 +93,9 @@ class View:
                 return True
         return False
 
-    def draw(self):
+    def draw(self, screen_dimension):
         for child in self.children:
-            child.draw()
+            child.draw(screen_dimension)
 
 class GameView(View):
     def __init__(self, game, board, controller):
@@ -112,11 +109,11 @@ class HandView(View):
         super().__init__(game, board, controller)
         self.card_views = [CardView(game, board, controller, i) for i in range(max_num_cards)]
         self.set_children(self.card_views)
-
-    def draw(self):
+        
+    def draw(self, screen_dimension):
         hand_cards = self.game.current_player_hand()
         for i in range(len(hand_cards)):
-            self.card_views[i].draw()
+            self.card_views[i].draw(screen_dimension)
 
     def handle_event(self, event):
         hand_cards = self.game.current_player_hand()
@@ -136,10 +133,11 @@ class CardView(View):
     def __init__(self, game, board, controller, hand_card_index):
         super().__init__(game, board, controller)
         self.hand_card_index = hand_card_index
-        self.location = self.calc_location(hand_card_index)
 
-    def calc_location(self, card_index):
-        return ((HAND_MARGIN + card_index * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+    def calc_location(self, screen_dimension):
+        hand = self.game.current_player_hand()
+        HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(self.game.current_player_hand()) + HAND_SPACING)/2
+        return ((HAND_MARGIN + self.hand_card_index * (HAND_SPACING + HAND_CARD_SIZE[0]), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
 
     def handle_event(self, event):
         if self.is_event_inside_card():
@@ -158,7 +156,8 @@ class CardView(View):
             pg.mouse.get_pos()[1] > self.location[1] and \
             pg.mouse.get_pos()[1] < self.location[1] + HAND_CARD_SIZE[1]
 
-    def draw(self):
+    def draw(self, screen_dimension):
+        self.location = self.calc_location(screen_dimension)
         card = self.game.current_player_hand()[self.hand_card_index]
 
         if self.board.is_hand_card_highlighted(self.hand_card_index):
@@ -268,27 +267,28 @@ class DiscardButtonView(View):
         super().__init__(game, board, controller)
         self.set_children([])
 
-    def calc_location(self):
+    def calc_location(self, screen_dimension):
         hand = self.game.current_player_hand()
+        HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
         LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
         return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
 
-    def draw(self):
+    def draw(self, screen_dimension):
         if not self.board.discard:
             self.draw_discard_button()
         else:
             self.draw_cancel_button()
 
-    def draw_discard_button(self):
-        location = self.calc_location()
+    def draw_discard_button(self, screen_dimension):
+        location = self.calc_location(screen_dimension)
         pg.draw.rect(screen, pg.Color(DISCARD_BUTTON_COLOR), pg.Rect(location, DISCARD_BUTTON_SIZE), border_radius=int(DISCARD_BUTTON_ROUND_DISTANCE))
         discard_font = pg.font.SysFont("georgia", DISCARD_FONT_SIZE)
         discard_text = discard_font.render("Discard", True, (0, 0, 0))
         discard_text_rect = discard_text.get_rect(center = (location[0] + DISCARD_BUTTON_SIZE[0]/2, location[1] + DISCARD_BUTTON_SIZE[1]/2))
         screen.blit(discard_text, discard_text_rect)
 
-    def draw_cancel_button(self):
-        location = self.calc_location()
+    def draw_cancel_button(self, screen_dimension):
+        location = self.calc_location(screen_dimension)
         pg.draw.rect(screen, pg.Color(CANCEL_BUTTON_COLOR), pg.Rect(location, CANCEL_BUTTON_SIZE), border_radius=int(CANCEL_BUTTON_ROUND_DISTANCE))
         cancel_font = pg.font.SysFont("georgia", CANCEL_FONT_SIZE)
         cancel_text = cancel_font.render("Cancel", True, (0, 0, 0))
@@ -296,7 +296,7 @@ class DiscardButtonView(View):
         screen.blit(cancel_text, cancel_text_rect)
 
     def is_event_inside_discard_button(self):
-        location = self.calc_location()
+        location = self.calc_location(screen_dimension)
         return \
             pg.mouse.get_pos()[0] > location[0] and \
             pg.mouse.get_pos()[0] < location[0] + DISCARD_BUTTON_SIZE[0] and \

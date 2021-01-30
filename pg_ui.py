@@ -7,6 +7,10 @@ import random
 i = 0
 hand = Game().hands[(i + Game().turn) % len(Game().hands)]
 
+screen_dimension = (1440, 1000)
+
+
+
 DISCARD_BUTTON_SIZE = (100, 50)
 DISCARD_BUTTON_COLOR = (240, 20, 20)
 DISCARD_BUTTON_ROUND_DISTANCE = 8
@@ -14,10 +18,6 @@ DISCARD_BUTTON_MARGIN = (20, 0)
 DISCARD_FONT_SIZE = 20
 
 HAND_CARD_SIZE = (144, 250)
-HAND_SPACING = 20
-HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*NUM_CARDS_PER_PLAYER + HAND_SPACING)/2
-
-LAST_CARD_LOCATION = ((HAND_MARGIN + (NUM_CARDS_PER_PLAYER - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
 
 card_highlighted = 1
 discard = False
@@ -69,9 +69,6 @@ class PgUi:
                 elif event.type == pg.VIDEORESIZE:
                     print("pls resize")
                     screen_dimension = pg.display.get_surface().get_size()
-                    HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
-                    LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
-                    print("hand margin: ", HAND_MARGIN)
                     print(screen_dimension)
                     self.draw_game()
                     pg.display.update()
@@ -81,6 +78,6 @@ class PgUi:
     def draw_game(self):
         print("drawing stuff")
         screen.fill(BACKRGOUND_COLOR)
-        self.game_view.draw()
+        self.game_view.draw(screen_dimension)
 
     
