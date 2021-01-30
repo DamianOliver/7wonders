@@ -39,6 +39,7 @@ class PgUi:
         global LAST_CARD_LOCATION
 
         # draw initial hand
+        self.game_view.layout(screen_dimension)
         self.draw_game()
         pg.display.update()
         self.run_event_loop()
@@ -70,6 +71,7 @@ class PgUi:
                     print("pls resize")
                     screen_dimension = pg.display.get_surface().get_size()
                     print(screen_dimension)
+                    self.game_view.layout(screen_dimension)
                     self.draw_game()
                     pg.display.update()
 
@@ -78,6 +80,6 @@ class PgUi:
     def draw_game(self):
         print("drawing stuff")
         screen.fill(BACKRGOUND_COLOR)
-        self.game_view.draw(screen_dimension)
+        self.game_view.draw()
 
     
