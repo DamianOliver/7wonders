@@ -61,11 +61,9 @@ class PgUi:
                     continue
                 elif event.type == pg.QUIT:
                     pg.quit()
-                    print("NO DON'T QUIT")
                     return
                 elif event.type == pg.WINDOWEVENT and event.__dict__["event"] == pg.WINDOWEVENT_CLOSE:
                     pg.quit()
-                    print("NO DON'T QUIT")
                     return
                 elif event.type == pg.VIDEORESIZE:
                     print("pls resize")

@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 
-NUM_PLAYERS = 3
+NUM_PLAYERS = 2
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -82,7 +82,7 @@ class Game:
             Card("Tavern", C.COMMERCIAL, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], cost = [R.SILK]),
             Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
             Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,),(R.STONE,)]),
-            Card("Guard Tower", C.MILITARY, num_shields = 2, cost = [R.STONE]),
+            Card("Guard Tower", C.MILITARY, num_shields = 2, money_cost = 1),
             Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
             Card("University", C.SCIENCE, provides_sciences = ["science_symbol", "science_symbol"], cost = [R.BRICK, R.SILK]),
             Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,),(R.SILK,)]),
@@ -107,7 +107,7 @@ class Player:
     def __init__(self, player_number):
         self.player_number = player_number
         self.cards = []
-        self.money = 3
+        self.money = 0
 
     def give_moneys_for_discard(self):
         self.money += 3
@@ -119,6 +119,11 @@ class Player:
             self.cards.append(selected_card)
             print("self.cards: ", self.cards)
             return True
+        elif selected_card.money_cost > 0:
+            if self.money >= selected_card.money_cost:
+                self.money -= selected_card.money_cost
+            else:
+                return False
         else:
             return False
 

@@ -58,6 +58,10 @@ DISCARD_BUTTON_ROUND_DISTANCE = 8
 DISCARD_BUTTON_MARGIN = (20, 0)
 DISCARD_FONT_SIZE = 20
 
+MONEY_MARGIN = (20, 0)
+MONEY_IMAGE_SIZE = (60, 60)
+MONEY_FONT_SIZE = 30
+
 CANCEL_BUTTON_COLOR = (250, 0, 0)
 CANCEL_BUTTON_SIZE = DISCARD_BUTTON_SIZE
 CANCEL_BUTTON_ROUND_DISTANCE = DISCARD_BUTTON_ROUND_DISTANCE
@@ -66,6 +70,8 @@ CANCEL_BUTTON_MARGIN = (20, 0)
 
 HIGHLIGHT_DISTANCE = 10
 HIGHLIGHT_ROUND_DISTANCE = 4
+
+MONEY_COST_FONT_SIZE = 10
 
 RESOURCE_IMAGE_FILE_NAMES = {
     R.STONE: 'Images/stone.png',
@@ -106,7 +112,32 @@ class GameView(View):
         super().__init__(game, board, controller)
         self.hand_view = HandView(game, board, controller)
         self.discard_button_view = DiscardButtonView(game, board, controller)
-        self.set_children([self.hand_view, self.discard_button_view])
+        self.money_view = MoneyView(game, board, controller)
+        self.set_children([self.hand_view, self.discard_button_view, self.money_view])
+
+class MoneyView(View):
+    def __init__(self, game, board, controller):
+        super().__init__(game, board, controller)
+        self.location = (0, 0)
+
+    def calc_location(self, screen_dimension):
+        hand = self.game.current_player_hand()
+        HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
+        LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2))
+        return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + MONEY_MARGIN[0], LAST_CARD_LOCATION[1] + MONEY_MARGIN[1] + DISCARD_BUTTON_SIZE[1] * 2)
+
+    def draw(self):
+        money_image = pg.image.load('Images/money_image.png')
+        money_image = pg.transform.scale(money_image, MONEY_IMAGE_SIZE)
+        screen.blit(money_image, self.location)
+
+        money_font = pg.font.SysFont("timesnewroman", MONEY_FONT_SIZE)
+        money_text = money_font.render(str(self.game.current_player().money), True, (0, 0, 0))
+        money_text_rect = money_text.get_rect(center = (self.location[0] + MONEY_IMAGE_SIZE[0]/2, self.location[1] + MONEY_IMAGE_SIZE[1]/2))
+        screen.blit(money_text, money_text_rect)
+
+    def layout(self, screen_dimension):
+        self.location = self.calc_location(screen_dimension)
 
 class HandView(View):
     def __init__(self, game, board, controller, max_num_cards=NUM_CARDS_PER_PLAYER):
@@ -225,6 +256,7 @@ class CardView(View):
             points_text_size = points_text.get_size()
             points_text_pos = (points_image_pos[0] + CIVIC_POINTS_SIZE[0]/2 - points_text_size[0]/2, points_image_pos[1] + CIVIC_POINTS_SIZE[1]/2 - points_text_size[1]/2 - 3)
             screen.blit(points_text, points_text_pos)
+
         elif card.card_type == C.RAW_R or card.card_type == C.MFG_R or card.card_type == C.COMMERCIAL:
             for a in range(len(card.provides_resources)):
                 if len(card.provides_resources[a]) > 1:
@@ -242,7 +274,6 @@ class CardView(View):
                             slash = pg.transform.scale(slash, (int(slash_size[0]), int(slash_size[1])))
                             slash_pos = (resource_image_pos[0] + choice_resource_hand_size[0], self.location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                             screen.blit(slash, (slash_pos[0], slash_pos[1]))
-
                 else:
                     resource_image = self.load_resource_image(resource=card.provides_resources[a][0])
                     resource_image = pg.transform.scale(resource_image, PROVIDES_RESOURCE_ICON_SIZE)
@@ -260,6 +291,20 @@ class CardView(View):
                 cost_image = self.load_resource_image(resource=cost)
                 cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
                 screen.blit(cost_image, cost_pos)
+        elif card.money_cost > 0:
+            rect_size = (HAND_RESOURCE_COST_SIZE[0]/2, (HAND_RESOURCE_COST_SIZE[1] + 3))
+            rect_location = (self.location[0] + HAND_RESOURCE_COST_SIZE[0]/2, self.location[1])
+            cost_pos = (self.location[0] + HAND_RESOURCE_COST_MARGIN[0], self.location[1] + HAND_RESOURCE_COST_MARGIN[1])
+            pg.draw.rect(screen, pg.Color(220, 200, 210), pg.Rect((rect_location), (rect_size)))
+            cost_image = pg.image.load('Images/money_image.png')
+            cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
+            screen.blit(cost_image, cost_pos)
+
+            money_cost_font = pg.font.SysFont("timesnewroman", MONEY_COST_FONT_SIZE)
+            money_cost_text = money_cost_font.render(str(card.money_cost), True, (0, 0, 0))
+            money_cost_text_rect = money_cost_text.get_rect(center = (cost_pos[0] + HAND_RESOURCE_COST_SIZE[0]/2, cost_pos[1] + HAND_RESOURCE_COST_SIZE[1]/2))
+            screen.blit(money_cost_text, money_cost_text_rect)
+
 
     def draw_highlight(self):
         highlight_color = DISCARD_HIGHLIGHT_COLOR if self.board.discard else PLAY_HIGHLIGHT_COLOR
@@ -321,6 +366,3 @@ class DiscardButtonView(View):
                 self.controller.on_discard_button_pressed()
                 return True
         return False
-
-
-
