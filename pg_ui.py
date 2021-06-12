@@ -50,8 +50,6 @@ class PgUi:
     def play(self):
         global card_highlighted
         global screen_dimension
-        global HAND_MARGIN
-        global LAST_CARD_LOCATION
 
         # draw initial hand
         self.game_view.layout(screen_dimension)
@@ -60,7 +58,6 @@ class PgUi:
         self.run_event_loop()
 
     def run_event_loop(self):
-        global HAND_MARGIN
         global screen_dimension
         global discard
 
@@ -81,9 +78,9 @@ class PgUi:
                     pg.quit()
                     return
                 elif event.type == pg.VIDEORESIZE:
-                    print("pls resize")
+                    # print("pls resize")
                     screen_dimension = pg.display.get_surface().get_size()
-                    print(screen_dimension)
+                    # print(screen_dimension)
                     self.game_view.layout(screen_dimension)
                     self.draw_game()
                     pg.display.update()
@@ -91,7 +88,7 @@ class PgUi:
     # def draw_money(self, money)
 
     def draw_game(self):
-        print("drawing stuff")
+        # print("drawing stuff")
         screen.fill(BACKRGOUND_COLOR)
         self.game_view.draw()
 

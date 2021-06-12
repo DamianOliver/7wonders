@@ -54,10 +54,10 @@ class GameController:
 
     def discard_card(self, selected_card_number):
         hand = self.game.current_player_hand()
-        print("discarrrrrrrrrrrrrrrrd")
+        # print("discarrrrrrrrrrrrrrrrd")
         del hand[selected_card_number]
         self.game.current_player().give_moneys_for_discard()
-        print("MONEY: ", self.game.current_player().money)
+        # print("MONEY: ", self.game.current_player().money)
         self.game.current_player_finished()
         self.board.request_redraw()
 
@@ -71,11 +71,12 @@ class GameController:
 
     def select_card(self, selected_card_number):
         hand = self.game.current_player_hand()
-        print("selecting a card!!!")
+        # print("selecting a card!!!")
         selected_card = hand[selected_card_number]
 
         if self.game.current_player().play_card(selected_card):
             del hand[selected_card_number]
+            self.game.current_player_finished()
+            self.board.request_redraw()
 
-        self.game.current_player_finished()
-        self.board.request_redraw()
+        

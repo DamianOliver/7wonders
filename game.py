@@ -15,7 +15,7 @@
 import random
 from enum import Enum
 
-NUM_PLAYERS = 2
+NUM_PLAYERS = 1
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -27,7 +27,7 @@ class R(Enum):
     WOOD = "wood"
     GLASS = "glass"
     PAPYRUS = "papyrus"
-
+   
     def __repr__(self):
         return str(self.value)
 
@@ -41,6 +41,12 @@ class C(Enum):
     COMMERCIAL = "Commercial"
     MILITARY = "Military"
     CIVIC = "Civic"
+    GUILD = "Guild"
+
+class S(Enum):
+    TABLET = "Tablet"
+    COG = "Cog"
+    COMPASS = "Compass"
 
     def __repr__(self):
         return str(self.value)
@@ -88,24 +94,87 @@ class Game:
             print("  Player {} Cards: ".format(player.player_number))
             player.print_cards()
 
+    # def create_deck(self):
+    #     deck = [ \
+    #         Card("BATHS", C.CIVIC, points = 3, cost = [R.STONE], num_players = 3),
+    #         Card("GLASSWORKS", C.MFG_R, provides_resources = [(R.GLASS,)], num_players = 3),
+    #         Card("CLAY PIT", C.RAW_R, provides_resources = [(R.BRICK, R.ORE)], money_cost = 1, num_players = 3),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [S.COMPASS], cost = [R.SILK], num_players = 3),
+    #         Card("SCRIPTORIUM", C.SCIENCE, provides_sciences = [S.TABLET], cost = [R.PAPYRUS], num_players = 3),
+    #         Card("CLAY POOL", C.RAW_R, provides_resources = [(R.BRICK,)], num_players = 3),
+    #         Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 3),
+    #         Card("ORE VEIN", C.RAW_R, provides_resources = [(R.ORE,)], num_players = 3),
+    #         Card("EAST TRADING POST", C.COMMERCIAL, num_players = 3),
+    #         Card("ALTAR", C.CIVIC, points = 2, num_players = 3),
+    #         Card("TIMBER YARD", C.RAW_R, provides_resources = [(R.STONE, R.WOOD)], money_cost = 1, num_players = 3),
+    #         Card("GUARD TOWER", C.MILITARY, num_shields = 1, cost = [R.BRICK], num_players = 3),
+    #         Card("PRESS", C.MFG_R, provides_resources = [(R.PAPYRUS,)], num_players = 3),
+    #         Card("STOCKADE", C.MILITARY, num_shields = 1, cost = [R.WOOD], num_players = 3),
+    #         Card("BARRACKS", C.MILITARY, num_shields = 1, cost = [R.ORE], num_players = 3),
+    #         Card("WORKSHOP", C.SCIENCE, provides_sciences = [S.COG], cost = [R.GLASS], num_players = 3),
+    #         Card("LOOM", C.MFG_R, provides_resources = [(R.SILK,)], num_players = 3),
+    #         Card("STONE PIT", C.RAW_R, provides_resources = [(R.STONE,)], num_players = 3),
+    #         Card("MARKETPLACE", C.COMMERCIAL, num_players = 3),
+    #         Card("WEST TRADING POST", C.COMMERCIAL, num_players = 3),
+    #         Card("THEATER", C.CIVIC, points = 2, num_players = 3),
+    #         # Card("", C., ),
+    #         Card("THEATER", C.CIVIC, points = 2, num_players = 4),
+    #         Card("TAVERN", C.COMMERCIAL, provides_money = 5, num_players = 4),
+    #         Card("EXCAVATION", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)], money_cost = 1, num_players = 4),
+    #         Card("ORE VEIN", C.RAW_R, provides_resources = [(R.ORE,)], num_players = 4),
+    #         Card("PAWNSHOP", C.CIVIC, points = 3, num_players = 4),
+    #         Card("GUARD TOWER", C.MILITARY, num_shields = 1, cost = [R.BRICK], num_players = 4),
+    #         Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 4),
+
+    #         Card("BARRACKS", C.MILITARY, num_shields = 1, cost = [R.ORE], num_players = 5),
+    #         Card("STONE PIT", C.RAW_R, provides_resources = [(R.STONE,)], num_players = 5),
+    #         Card("TAVERN", C.COMMERCIAL, provides_money = 5, num_players = 5),
+    #         Card("CLAY POOL", C.RAW_R, provides_resources = [(R.BRICK,)], num_players = 5),
+    #         Card("ALTAR", C.CIVIC, points = 2, num_players = 5),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [S.COMPASS], cost = [R.SILK], num_players = 5),
+    #         Card("FOREST CAVE", C.RAW_R, provides_resources = [(R.WOOD, R.ORE)], money_cost = 1, num_players = 5),
+
+    #         Card("MARKETPLACE", C.COMMERCIAL, num_players = 6),
+    #         Card("TREE FARM", C.RAW_R, provides_resources = [(R.WOOD, R.BRICK)], money_cost = 1, num_players = 6),
+    #         Card("MINE", C.RAW_R, provides_resources = [(R.STONE, R.ORE)], money_cost = 1, num_players = 6),
+    #         Card("GLASSWORKS", C.MFG_R, provides_resources = [(R.GLASS,)], num_players = 6),
+    #         Card("LOOM", C.MFG_R, provides_resources = [(R.SILK,)], num_players = 6),
+    #         Card("PRESS", C.MFG_R, provides_resources = [(R.PAPYRUS,)], num_players = 6),
+    #         Card("THEATER", C.CIVIC, points = 2, num_players = 6),
+
+    #         Card("EAST TRADING POST", C.COMMERCIAL, num_players = 7),
+    #         Card("PAWNSHOP", C.CIVIC, points = 3, num_players = 7),
+    #         Card("WORKSHOP", C.SCIENCE, provides_sciences = [S.COG], cost = [R.GLASS], num_players = 7),
+    #         Card("TAVERN", C.COMMERCIAL, provides_money = 5, num_players = 7),
+    #         Card("WEST TRADING POST", C.COMMERCIAL, num_players = 7),
+    #         Card("BATHS", C.CIVIC, points = 3, cost = [R.STONE], num_players = 7),  
+    #         Card("STOCKADE", C.MILITARY, num_shields = 1, cost = [R.WOOD], num_players = 7)]
+
+    #     length_of_deck = len(deck)
+    #     i = 0
+
+    #     while i < length_of_deck:
+    #         if deck[i].num_players > 3 and deck[i].num_players > NUM_PLAYERS:
+    #             del deck[i]
+    #             length_of_deck -= 1
+    #         else:
+    #             i += 1
+
+    #     random.shuffle(deck)
+    #     return deck
+
     def create_deck(self):
         deck = [ \
-            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.BRICK, R.STONE, R.WOOD, R.ORE)]),
-            Card("Stones 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.STONE, R.STONE, R.STONE)], cost = [R.SILK]),
-            Card("Stones + Bricks 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)]),
-            Card("Tavern", C.COMMERCIAL, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], cost = [R.SILK]),
-            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,)]),
-            Card("Quarry", C.RAW_R, provides_resources = [(R.STONE,),(R.STONE,)]),
-            Card("Guard Tower", C.MILITARY, num_shields = 2, money_cost = 1),
-            Card("Guard Tower", C.MILITARY, num_shields = 1, cost = [R.STONE]),
-            Card("University", C.SCIENCE, provides_sciences = ["science_symbol", "science_symbol"], cost = [R.BRICK, R.SILK]),
-            Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,),(R.SILK,)]),
-            Card("Temple", C.CIVIC, points = 4, cost = [R.ORE]),
-            Card("Scriptorium", C.SCIENCE, provides_sciences = ["science_symbol"]),
-            Card("Scriptorium", C.SCIENCE, provides_sciences = ["science_symbol"]),
-            Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)]),
-            Card("Palace", C.CIVIC, points = 8, cost = [R.STONE, R.STONE])]
-        random.shuffle(deck)
+            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+            Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+            Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
+            Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+            Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7)]
         return deck
 
     def create_hands(self, deck):
@@ -122,6 +191,7 @@ class Player:
         self.player_number = player_number
         self.cards = []
         self.money = 0
+        self.num_shields = 0
 
     def give_moneys_for_discard(self):
         self.money += 3
@@ -129,17 +199,26 @@ class Player:
     def play_card(self, selected_card):
         resource_tuples = self.available_resources_tuples(self.cards)
 
-        if self.has_resources(selected_card.cost, resource_tuples):
+        if self.can_play_card(selected_card):
+            self.money -= selected_card.money_cost
+            self.num_shields += selected_card.num_shields
+            self.money += selected_card.provides_money
+            print("added: ", self.num_shields)
             self.cards.append(selected_card)
             print("self.cards: ", self.cards)
             return True
-        elif selected_card.money_cost > 0:
-            if self.money >= selected_card.money_cost:
-                self.money -= selected_card.money_cost
-            else:
-                return False
         else:
             return False
+
+    def can_play_card(self, card):
+        resource_tuples = self.available_resources_tuples(self.cards)
+
+        if self.has_resources_for_card(card.cost, resource_tuples) and self.money >= card.money_cost:
+            return True
+        else:
+            return False
+
+    # def has_money_for_card(self, )
 
     def available_resources_tuples(self, cards):
         resource_tuples = []
@@ -148,13 +227,13 @@ class Player:
                 resource_tuples.append(resource_tuple)
         return resource_tuples
 
-    def has_resources(self, cost, resource_tuples):
+    def has_resources_for_card(self, cost, resource_tuples):
         if len(cost) == 0:
             return True
         elif len(resource_tuples) == 0:
             return False
         elif len(resource_tuples[0]) == 0:
-            return self.has_resources(cost, resource_tuples[1:])
+            return self.has_resources_for_card(cost, resource_tuples[1:])
         else:
             for resource_option in resource_tuples[0]:
                 cost_copy = cost.copy()
@@ -162,7 +241,7 @@ class Player:
                     cost_copy.remove(resource_option)
                 except:
                     pass
-                if self.has_resources(cost_copy, resource_tuples[1:]):
+                if self.has_resources_for_card(cost_copy, resource_tuples[1:]):
                     return True
             # No matches found
             return False
@@ -201,7 +280,7 @@ class Player:
     #             print(card.provides_resources)
 
 class Card:
-    def __init__( self, name, card_type, points = 0, provides_resources = [], cost = [], provides_sciences = [], num_shields = 0, money_cost = 0):
+    def __init__(self, name, card_type, points = 0, provides_resources = [], cost = [], provides_sciences = [], provides_money = 0, num_shields = 0, money_cost = 0, num_players = 3):
         self.cost = cost
         self.points = points
         self.card_type = card_type
@@ -210,6 +289,8 @@ class Card:
         self.provides_sciences = provides_sciences
         self.num_shields = num_shields
         self.money_cost = money_cost
+        self.provides_money = provides_money
+        self.num_players = num_players
 
     def __repr__(self):
         return self.__str__()

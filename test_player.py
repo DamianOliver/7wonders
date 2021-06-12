@@ -20,6 +20,7 @@ TOWEL_FACTORY = Card("Towel Factory", C.MFG_R, provides_resources = [(R.SILK,),(
 STONES_N_BRICKS = Card("Stones + Bricks 'r' Us", C.RAW_R, provides_resources = [(R.STONE, R.BRICK)])
 COAL_MINE = Card("Coal Mine", C.RAW_R, provides_resources = [(R.COAL,)])
 TEMPLE = Card("Temple", C.CIVIC, points = 4, cost = [R.COAL])
+EXPENSIVE_TEMPLE = Card("Temple", C.CIVIC, points = 4, cost = [R.COAL], money_cost=1)
 
 @pytest.fixture
 def player():
@@ -67,54 +68,54 @@ def test_Player__available_resource_tuples__handles_multiple_cards(player):
     assert resource_provides.count((R.SILK,)) == 2
     assert resource_provides.count((R.BRICK,)) == 1
 
-def test_Player__has_resources__with_single_resource(player):
+def test_Player__has_resources_for_card__with_single_resource(player):
     # given
     resource_provides = [(R.COAL,)]
 
     # expect
-    assert player.has_resources([R.COAL], resource_provides)
+    assert player.has_resources_for_card([R.COAL], resource_provides)
 
-def test_Player__has_resources__with_multiple_resources(player):
+def test_Player__has_resources_for_card__with_multiple_resources(player):
     # given
     resource_provides = [(R.COAL,), (R.SILK,)]
 
     # expect
-    assert player.has_resources([R.COAL, R.SILK], resource_provides)
+    assert player.has_resources_for_card([R.COAL, R.SILK], resource_provides)
 
-def test_Player__has_resources__with_resource_tuple_False(player):
+def test_Player__has_resources_for_card__with_resource_tuple_False(player):
     # given
     resource_provides = [(R.COAL, R.SILK)]
 
     # expect
-    assert False == player.has_resources([R.COAL, R.SILK], resource_provides)
+    assert False == player.has_resources_for_card([R.COAL, R.SILK], resource_provides)
 
-def test_Player__has_resources__with_resource_multiple_tuples(player):
+def test_Player__has_resources_for_card__with_resource_multiple_tuples(player):
     # given
     resource_provides = [(R.COAL, R.SILK), (R.COAL, R.SILK)]
 
     # expect
-    assert player.has_resources([R.COAL, R.SILK], resource_provides)
+    assert player.has_resources_for_card([R.COAL, R.SILK], resource_provides)
 
-def test_Player__has_resources__with_multiple_costs(player):
+def test_Player__has_resources_for_card__with_multiple_costs(player):
     # given
     resource_provides = [(R.COAL,), (R.COAL,)]
 
     # expect
-    assert player.has_resources([R.COAL, R.COAL], resource_provides)
+    assert player.has_resources_for_card([R.COAL, R.COAL], resource_provides)
 
-def test_Player__has_resources__with_multiple_costs(player):
+def test_Player__has_resources_for_card__with_multiple_costs(player):
     # given
     resource_provides = [(R.COAL,), (R.COAL,)]
 
     # expect
-    assert player.has_resources([R.COAL, R.COAL], resource_provides)
+    assert player.has_resources_for_card([R.COAL, R.COAL], resource_provides)
 
-def test_Player__has_resources__combo1(player):
+def test_Player__has_resources_for_card__combo1(player):
     # given
     resource_provides = [(R.COAL,), (R.COAL,), (R.SILK, R.BRICK), (R.STONE,)]
 
     # expect
-    assert player.has_resources([R.COAL, R.COAL, R.SILK, R.STONE], resource_provides)
+    assert player.has_resources_for_card([R.COAL, R.COAL, R.SILK, R.STONE], resource_provides)
 
 def test_Player__play_card(player):
     # when
@@ -145,3 +146,15 @@ def test_Player__play_card_with_cost(player):
     assert len(player.cards) == 2
     assert player.cards.count(COAL_MINE) == 1
     assert player.cards.count(TEMPLE) == 1
+
+def test_Player__play_card_with_money(player):
+    # given
+    player.money = 99
+
+    # when
+    player.play_card(EXPENSIVE_TEMPLE)
+
+    # then
+    assert len(player.cards) == 1
+    assert player.cards.count(EXPENSIVE_TEMPLE) == 1
+    assert player.money == 98
