@@ -15,8 +15,6 @@
 import pygame as pg
 from game import NUM_CARDS_PER_PLAYER, C, Game, R, S
 
-from gui.controller import Board, GameController
-
 # display only and takes events
 
 screen = pg.display.set_mode(( (1440, 1000)), pg.RESIZABLE)
@@ -36,6 +34,9 @@ PLAY_HIGHLIGHT_COLOR = (255, 255, 0)
 DISCARD_HIGHLIGHT_COLOR = (255, 40, 40)
 HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
 DISCARD_BUTTON_COLOR = (230, 20, 20)
+All_CARDS_VIEW_BUTTON_COLOR = (40, 200, 50)
+
+BLAND_VALUE = 1
 
 CARD_COLORS = {
     C.MILITARY: MILITARY_COLOR,
@@ -103,9 +104,17 @@ FILE_PROVIDES_IMAGE_SIZE = (17, 17)
 FILE_PROVIDES_FONT_SIZE = 15
 FILE_SLASH_SIZE = (8, 14)
 
+ALL_CARDS_SIZE = (144, 250)
+ALL_CARDS_SPACING = 10
+ALL_CARDS_MARGIN = (30, 30)
+
+BACK_ARROW_SIZE = (50, 50)
+
 NEIGHBOR_RESOURCE_SIZE = (40, 40)
 
 WONDER_BOARD_SIZE = (800, 300)
+
+ALL_CARDS_VIEW_BUTTON_SIZE = (WONDER_BOARD_SIZE[0] - 150, SELF_LABEL_HEIGHT - FILE_THICKNESS)
 
 MONEY_COST_FONT_SIZE = 10
 
@@ -151,6 +160,8 @@ class GameView(View):
         self.money_view = MoneyView(game, board, controller)
         self.self_view = SelfView(game, board, controller)
         self.adjacent_resource_view = AdjacentResourceView(game, board, controller)
+        self.all_cards_view_button = AllCardsViewButton(game, board, controller)
+        self.all_cards_view = AllCardsView(game, board, controller)
 
         location_index = 0
         player_view_list = []
@@ -159,14 +170,24 @@ class GameView(View):
             player_view_list.append(self.player_view)
             location_index += 1
 
-        self.set_children([self.hand_view, self.discard_button_view, self.money_view, self.self_view, self.adjacent_resource_view])
+        self.set_children([self.hand_view, self.discard_button_view, self.money_view, self.self_view, self.adjacent_resource_view, self.all_cards_view_button])
         self.children += player_view_list
+        self.children.append(self.all_cards_view)
+
+    # def handle_event(self, event):
+    #     #handle P
+    #     return super().handle_event(event)
 
 class SelfView(View):
     def __init__(self, game, board, controller):
         super().__init__(game, board, controller)
         self.location = (0, 0)
         self.player_index = self.game.current_player_index
+
+    def bland(self, color):
+        color_average = (color[0] + color[1] + color[2]) / 3
+        bland_color = ((color[0] * BLAND_VALUE + color_average) / 2, (color[1] * BLAND_VALUE + color_average) / 2, (color[2] * BLAND_VALUE + color_average) / 2)
+        return bland_color
 
     def draw(self):
         pg.draw.rect(screen, (100, 100, 100), (self.location, WONDER_BOARD_SIZE))
@@ -206,7 +227,8 @@ class SelfView(View):
         screen.blit(label_text_3, label_text_3_rect)
 
     def draw_raw_resources(self, player):
-        pg.draw.rect(screen, RAW_RESOURCE_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * NUM_FILES), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_raw_resource_color = self.bland(RAW_RESOURCE_COLOR)
+        pg.draw.rect(screen, bland_raw_resource_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * NUM_FILES), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         total_stone = 0
@@ -265,7 +287,6 @@ class SelfView(View):
                 screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
                 total_spacing += (FILE_PROVIDES_IMAGE_SIZE[0] + 4)
                 if i != len(card.provides_resources[0]) - 1:
-                    print("SLASH")
                     slash = pg.image.load('Images/slash.png')
                     slash = pg.transform.scale(slash, FILE_SLASH_SIZE)
                     slash_pos = (self.location[0] + 85 + ((total_stone + total_ore + total_brick + total_wood) * (4 + FILE_PROVIDES_IMAGE_SIZE[0])) + total_spacing, self.location[1] - NUM_FILES * SELF_FILE_HEIGHT)
@@ -280,7 +301,8 @@ class SelfView(View):
         screen.blit(total_cards_font, total_cards_font_rect)
 
     def draw_manufactored_resources(self, player):
-        pg.draw.rect(screen, MANUFACTORED_RESOURCE_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 1)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_manufactored_resource_color = self.bland(MANUFACTORED_RESOURCE_COLOR)
+        pg.draw.rect(screen, bland_manufactored_resource_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 1)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         total_glass = 0
@@ -342,7 +364,8 @@ class SelfView(View):
         screen.blit(total_font, total_font_3_rect)
 
     def draw_military(self, player):
-        pg.draw.rect(screen, MILITARY_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 2)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_military_color = self.bland(MILITARY_COLOR)
+        pg.draw.rect(screen, bland_military_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 2)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         for i in range(len(player.cards)):
@@ -367,7 +390,8 @@ class SelfView(View):
         screen.blit(total_shields_font, total_shields_font_rect)
 
     def draw_science(self, player):
-        pg.draw.rect(screen, SCIENCE_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 3)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_science_color = self.bland(SCIENCE_COLOR)
+        pg.draw.rect(screen, bland_science_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 3)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         total_tablets = 0
@@ -409,7 +433,8 @@ class SelfView(View):
         screen.blit(total_font, total_font_3_rect)
 
     def draw_civic(self, player):
-        pg.draw.rect(screen, CIVIC_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 4)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_civic_color = self.bland(CIVIC_COLOR)
+        pg.draw.rect(screen, bland_civic_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 4)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         total_points = 0
@@ -439,7 +464,8 @@ class SelfView(View):
         screen.blit(total_shields_font, total_shields_font_rect)
 
     def draw_commercial(self, player):
-        pg.draw.rect(screen, COMMERCIAL_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 5)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_commerical_color = self.bland(COMMERCIAL_COLOR)
+        pg.draw.rect(screen, bland_commerical_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 5)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         for i in range(len(player.cards)):
@@ -453,7 +479,8 @@ class SelfView(View):
         screen.blit(total_font, total_font_3_rect)
 
     def draw_guilds(self, player):
-        pg.draw.rect(screen, GUILD_COLOR, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 6)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
+        bland_guild_color = self.bland(GUILD_COLOR)
+        pg.draw.rect(screen, bland_guild_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 6)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
         for i in range(len(player.cards)):
@@ -526,7 +553,6 @@ class AdjacentResourceView(View):
 
 
         total_resources = total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus + total_silk
-        print("total resources: ", total_resources)
 
         for i in range(total_stone):
             stone_image = pg.image.load('Images/stone.png')
@@ -692,7 +718,7 @@ class PlayerView(View):
 
     def draw_civic_num(self, player):
         self.draw_civic_image()
-        # self.draw_civic_text(player)
+        self.draw_civic_text(player)
 
     def draw_civic_image(self):
         civic_size = (int(self.size[0] / 5), int(self.size[0] / 5))
@@ -702,13 +728,16 @@ class PlayerView(View):
         screen.blit(civic, (civic_pos[0], civic_pos[1]))
 
     def draw_civic_text(self, player):
+        total_civic_points = 0
+        for card in player.cards:
+            total_civic_points += card.points
         civic_size = (int(self.size[0] / 5), int(self.size[0] / 5))
-        civic_pos = (self.location[0] + self.size[0] - civic_size[0] - 10, self.location[1] + self.size[1] / 2 - civic_size[1] / 2)
+        civic_pos = (self.location[0] + self.size[0] / 2, self.location[1] + self.size[1] / 2 - civic_size[1] / 2)
 
         num_civics_font_size = int(civic_size[0] / 2)
         num_civics_font = pg.font.SysFont('georgia', num_civics_font_size)
-        num_civics_text = num_civics_font.render(str(player.num_civics), True, (30, 30, 30))
-        num_civics_text_rect = num_civics_text.get_rect(center = (civic_pos[0] + civic_size[0] / 2, civic_pos[1] + civic_size[1] + self.size[1] / 15))
+        num_civics_text = num_civics_font.render(str(total_civic_points), True, (30, 30, 30))
+        num_civics_text_rect = num_civics_text.get_rect(center = (civic_pos[0], civic_pos[1] + civic_size[1] + self.size[1] / 15))
         screen.blit(num_civics_text, num_civics_text_rect)
 
     def calc_size(self):
@@ -725,6 +754,8 @@ class PlayerView(View):
             self.size = [220, 150]
         elif len(self.game.players) == 7:
             self.size = [190, 130]
+        elif len(self.game.players) == 1:
+            self.size = [380, 200]
 
     def calc_location(self, screen_dimension):
         # player_view_spacing = screen_dimension[0] / (len(self.game.players) - 1)
@@ -802,10 +833,10 @@ class CardView(View):
         card = self.game.current_player_hand()[self.hand_card_index]
         if self.board.is_hand_card_highlighted(self.hand_card_index):
             self.draw_highlight(card)
-        self.draw_hand_card_background(card)
-        self.draw_hand_card_name(card.name)
-        self.draw_hand_card_provides(card)
-        self.draw_hand_card_cost(card)
+        self.draw_hand_card_background(card, self.location)
+        self.draw_hand_card_name(card.name, self.location)
+        self.draw_hand_card_provides(card, self.location)
+        self.draw_hand_card_cost(card, self.location)
         if not self.board.discard:
             self.draw_hand_card_greyout(card)
 
@@ -817,34 +848,29 @@ class CardView(View):
             screen.blit(greyout, (self.location[0] - ROUND_DISTANCE, self.location[1] - ROUND_DISTANCE))
 
 
-    def draw_hand_card_background(self, card):
-        # print(card.card_type)
+    def draw_hand_card_background(self, card, location):
         color = CARD_COLORS.get(card.card_type, (0, 0, 0))
-        pg.draw.rect(screen, pg.Color(color), pg.Rect(self.location, HAND_CARD_SIZE), border_radius=int(ROUND_DISTANCE))
+        pg.draw.rect(screen, pg.Color(color), pg.Rect(location, HAND_CARD_SIZE), border_radius=int(ROUND_DISTANCE))
 
-    def draw_hand_card_name(self, name):
+    def draw_hand_card_name(self, name, location):
         hand_card_name_font = pg.font.SysFont('georgia', HAND_CARD_NAME_FONT_SIZE)
         hand_card_name_text = hand_card_name_font.render(name, True, (255, 255, 255))
         hand_card_name_text = pg.transform.rotate(hand_card_name_text, 90)
         hand_card_name_text_length = hand_card_name_text.get_size()
-        hand_card_name_location = (self.location[0] + HAND_CARD_TEXT_MARGIN, self.location[1] + HAND_CARD_SIZE[1] - HAND_CARD_TEXT_MARGIN - hand_card_name_text_length[1])
+        hand_card_name_location = (location[0] + HAND_CARD_TEXT_MARGIN, location[1] + HAND_CARD_SIZE[1] - HAND_CARD_TEXT_MARGIN - hand_card_name_text_length[1])
         screen.blit(hand_card_name_text, (hand_card_name_location[0], hand_card_name_location[1]))
 
-    def draw_hand_card_provides(self, card):
+    def draw_hand_card_provides(self, card, location):
         if len(card.cost) == 0 and card.money_cost == 0:
             hand_resource_margin = 0
         else:
             hand_resource_margin = 20
         if card.card_type == C.MILITARY:
             for i in range(card.num_shields):
-                # print("mIlLiTAry")
                 shield = pg.image.load('Images/shield.png')
                 shield = pg.transform.scale(shield, SHIELD_SIZE)
-                shield_pos = (self.location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / card.num_shields*(i+1/2) - SHIELD_SIZE[0]/2, self.location[1])
+                shield_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / card.num_shields*(i+1/2) - SHIELD_SIZE[0]/2, self.location[1])
                 screen.blit(shield, (shield_pos[0], shield_pos[1]))
-                # print(shield_pos[0])
-                # print(self.location[0])
-                # print(HAND_CARD_SIZE[0]/2)
         elif card.card_type == C.SCIENCE:
             for i in range(len(card.provides_sciences)):
                 if card.provides_sciences[i] == S.TABLET:
@@ -854,12 +880,12 @@ class CardView(View):
                 elif card.provides_sciences[i] == S.COMPASS:
                     science_symbol_image = pg.image.load('Images/compass.png')
                 science_symbol_image = pg.transform.scale(science_symbol_image, SCIENCE_SYMBOL_SIZE)
-                science_symbol_image_pos = (self.location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_sciences)*(i+1/2) - SCIENCE_SYMBOL_SIZE[0]/2, self.location[1])
+                science_symbol_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_sciences)*(i+1/2) - SCIENCE_SYMBOL_SIZE[0]/2, self.location[1])
                 screen.blit(science_symbol_image, (science_symbol_image_pos[0], science_symbol_image_pos[1]))
         elif card.card_type == C.CIVIC:
             points_image = pg.image.load('Images/civic_points.png')
             points_image = pg.transform.scale(points_image, CIVIC_POINTS_SIZE)
-            points_image_pos = (self.location[0] + HAND_CARD_SIZE[0]/2 - CIVIC_POINTS_SIZE[0]/2, self.location[1])
+            points_image_pos = (location[0] + HAND_CARD_SIZE[0]/2 - CIVIC_POINTS_SIZE[0]/2, location[1])
             screen.blit(points_image, points_image_pos)
 
             points_font = pg.font.SysFont('timesnewroman', HAND_CIVIC_POINTS_FONT_SIZE)
@@ -872,26 +898,25 @@ class CardView(View):
             for a in range(len(card.provides_resources)):
                 if len(card.provides_resources[a]) > 1:
                     choice_resource_hand_size = (60 - len(card.provides_resources[a])*10, 60 - len(card.provides_resources[a])*10)
-                    # print("size: ", choice_resource_hand_size)
                     slash_size = (choice_resource_hand_size[0]/2.5, choice_resource_hand_size[1])
                     resource_tuple = card.provides_resources[a]
                     for i in range(len(resource_tuple)):
                         resource_image = self.load_resource_image(resource=resource_tuple[i])
                         resource_image = pg.transform.scale(resource_image, choice_resource_hand_size)
-                        resource_image_pos = (HAND_CARD_PROVIDES_MARGIN[0] + self.location[0] + (choice_resource_hand_size[0] + slash_size[0])*i, self.location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                        resource_image_pos = (HAND_CARD_PROVIDES_MARGIN[0] + location[0] + (choice_resource_hand_size[0] + slash_size[0])*i, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                         screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
                         if i != len(resource_tuple) - 1:
                             slash = pg.image.load('Images/slash.png')
                             slash = pg.transform.scale(slash, (int(slash_size[0]), int(slash_size[1])))
-                            slash_pos = (resource_image_pos[0] + choice_resource_hand_size[0], self.location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                            slash_pos = (resource_image_pos[0] + choice_resource_hand_size[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                             screen.blit(slash, (slash_pos[0], slash_pos[1]))
                 else:
                     resource_image = self.load_resource_image(resource=card.provides_resources[a][0])
                     resource_image = pg.transform.scale(resource_image, PROVIDES_RESOURCE_ICON_SIZE)
-                    resource_image_pos = (self.location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_resources)*(a+1/2) - PROVIDES_RESOURCE_ICON_SIZE[0]/2, self.location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                    resource_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_resources)*(a+1/2) - PROVIDES_RESOURCE_ICON_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                     screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
         if card.provides_money > 0:
-            money_pos = (self.location[0] + HAND_CARD_SIZE[0] / 2 - PROVIDES_MONEY_SIZE[0] / 2, self.location[1])
+            money_pos = (location[0] + HAND_CARD_SIZE[0] / 2 - PROVIDES_MONEY_SIZE[0] / 2, location[1])
             money_image = pg.image.load('Images/money_image.png')
             money_image = pg.transform.scale(money_image, PROVIDES_MONEY_SIZE)
             screen.blit(money_image, money_pos)
@@ -901,21 +926,21 @@ class CardView(View):
             money_text_rect = money_text.get_rect(center = (money_pos[0] + PROVIDES_MONEY_SIZE[0]/2, money_pos[1] + PROVIDES_MONEY_SIZE[1]/2))
             screen.blit(money_text, money_text_rect)
 
-    def draw_hand_card_cost(self, card):
+    def draw_hand_card_cost(self, card, location):
         if len(card.cost) > 0:
             rect_size = (HAND_RESOURCE_COST_SIZE[0]/2, (HAND_RESOURCE_COST_SIZE[1] + HAND_RESOURCE_COST_SPACING)*len(card.cost) + 3)
-            rect_location = (self.location[0] + HAND_RESOURCE_COST_SIZE[0]/2, self.location[1])
+            rect_location = (location[0] + HAND_RESOURCE_COST_SIZE[0]/2, location[1])
             pg.draw.rect(screen, pg.Color(220, 200, 210), pg.Rect((rect_location), (rect_size)))
             for i in range(len(card.cost)):
                 cost = card.cost[i]
-                cost_pos = (self.location[0] + HAND_RESOURCE_COST_MARGIN[0], self.location[1] + HAND_RESOURCE_COST_MARGIN[1] + (HAND_RESOURCE_COST_SPACING + HAND_RESOURCE_COST_SIZE[1]) * i)
+                cost_pos = (location[0] + HAND_RESOURCE_COST_MARGIN[0], location[1] + HAND_RESOURCE_COST_MARGIN[1] + (HAND_RESOURCE_COST_SPACING + HAND_RESOURCE_COST_SIZE[1]) * i)
                 cost_image = self.load_resource_image(resource=cost)
                 cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
                 screen.blit(cost_image, cost_pos)
         elif card.money_cost > 0:
             rect_size = (HAND_RESOURCE_COST_SIZE[0]/2, (HAND_RESOURCE_COST_SIZE[1] + 3))
-            rect_location = (self.location[0] + HAND_RESOURCE_COST_SIZE[0]/2, self.location[1])
-            cost_pos = (self.location[0] + HAND_RESOURCE_COST_MARGIN[0], self.location[1] + HAND_RESOURCE_COST_MARGIN[1])
+            rect_location = (location[0] + HAND_RESOURCE_COST_SIZE[0]/2, location[1])
+            cost_pos = (location[0] + HAND_RESOURCE_COST_MARGIN[0], location[1] + HAND_RESOURCE_COST_MARGIN[1])
             pg.draw.rect(screen, pg.Color(220, 200, 210), pg.Rect((rect_location), (rect_size)))
             cost_image = pg.image.load('Images/money_image.png')
             cost_image = pg.transform.scale(cost_image, HAND_RESOURCE_COST_SIZE)
@@ -988,3 +1013,96 @@ class DiscardButtonView(View):
                 self.controller.on_discard_button_pressed()
                 return True
         return False
+
+class AllCardsViewButton(View):
+    def __init__(self, game, board, controller):
+        super().__init__(game, board, controller)
+        self.set_children([])
+        self.location = (0, 0)
+
+    def layout(self, screen_dimension):
+        self.location = self.calc_location(screen_dimension)
+
+    def calc_location(self, screen_dimension):
+        return ((screen_dimension[0] - WONDER_BOARD_SIZE[0]) / 2 + 80, screen_dimension[1] - WONDER_BOARD_SIZE[1] - SELF_FILE_HEIGHT * NUM_FILES - SELF_LABEL_HEIGHT)
+
+    def draw(self):
+        pg.draw.rect(screen, pg.Color(All_CARDS_VIEW_BUTTON_COLOR), pg.Rect(self.location, ALL_CARDS_VIEW_BUTTON_SIZE))
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            if self.is_event_inside_all_cards_view_button():
+                self.controller.on_all_cards_button_pressed()
+                return True
+        return False
+
+    def is_event_inside_all_cards_view_button(self):
+        return \
+            pg.mouse.get_pos()[0] > self.location[0] and \
+            pg.mouse.get_pos()[0] < self.location[0] + ALL_CARDS_VIEW_BUTTON_SIZE[0] and \
+            pg.mouse.get_pos()[1] > self.location[1] and \
+            pg.mouse.get_pos()[1] < self.location[1] + ALL_CARDS_VIEW_BUTTON_SIZE[1]
+
+class AllCardsView(View):
+    def __init__(self, game, board, controller):
+        super().__init__(game, board, controller)
+        self.set_children([])
+        self.location = (0, 0)
+        self.back_button_location = (700, 100)
+        self.num_per_row = 3
+        self.background_size = (400, 400)
+        self.player_index = self.game.current_player_index
+
+    def layout(self, screen_dimension):
+        self.background_size = (screen_dimension[0], screen_dimension[1])
+        self.num_per_row = self.calc_num_per_row(screen_dimension)
+        self.back_button_location = (screen_dimension[0] - 80, 30)
+
+    def calc_num_per_row(self, screen_dimension):
+        if len(self.game.players[self.player_index].cards) == 0:
+            return 10
+        else:
+            return int(screen_dimension[0] / (ALL_CARDS_SIZE[0] + ALL_CARDS_MARGIN[0] + ALL_CARDS_SPACING))
+
+    def draw(self):
+        if self.board.all_cards:
+            pg.draw.rect(screen, (BACKRGOUND_COLOR), (self.location, self.background_size))
+            for i in range(len(self.game.players[self.player_index].cards)):
+                card = self.game.players[self.player_index].cards[i]
+
+                if i != 0:
+                    card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * int((i / self.num_per_row)))
+                    # print("i: ", i, "num per row: ", self.num_per_row, "%: ", i % self.num_per_row)
+                else:
+                    card_location = (ALL_CARDS_MARGIN[0], ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING)
+
+                CardView.draw_hand_card_background(self, card, card_location)
+                CardView.draw_hand_card_name(self, card.name, card_location)
+                CardView.draw_hand_card_provides(self, card, card_location)
+                CardView.draw_hand_card_cost(self, card, card_location)
+
+            self.draw_button()
+
+    def draw_button(self):
+        arrow_image = pg.image.load('Images/back_arrow.png')
+        arrow_image = pg.transform.scale(arrow_image, BACK_ARROW_SIZE)
+        arrow_image_pos = (self.back_button_location)
+        screen.blit(arrow_image, arrow_image_pos)
+
+    def is_event_inside_back_button(self):
+        return \
+            pg.mouse.get_pos()[0] > self.back_button_location[0] and \
+            pg.mouse.get_pos()[0] < self.back_button_location[0] + BACK_ARROW_SIZE[0] and \
+            pg.mouse.get_pos()[1] > self.back_button_location[1] and \
+            pg.mouse.get_pos()[1] < self.back_button_location[1] + BACK_ARROW_SIZE[1]
+
+    def handle_event(self, event):
+        if self.board.all_cards:
+            if event.type == pg.MOUSEBUTTONUP:
+                if self.is_event_inside_back_button():
+                    self.controller.on_back_button_pressed()
+                    return True
+            return False
+
+    def load_resource_image(self, resource):
+        return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])

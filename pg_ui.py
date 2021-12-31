@@ -43,6 +43,7 @@ class PgUi:
         self.board = Board()
         self.controller = GameController(self.game, self.board)
         self.init_views()
+        self.screen_dimension = (1440, 1000)
 
     def init_views(self):
         self.game_view = GameView(self.game, self.board, self.controller)
@@ -66,10 +67,10 @@ class PgUi:
             for event in events:
                 if self.game_view.handle_event(event):
                     if self.board.needs_redraw:
+                        self.game_view.layout(self.screen_dimension)
                         self.draw_game()
                         pg.display.update()
                         self.board.needs_redraw = False
-
                     continue
                 elif event.type == pg.QUIT:
                     pg.quit()
@@ -78,17 +79,18 @@ class PgUi:
                     pg.quit()
                     return
                 elif event.type == pg.VIDEORESIZE:
-                    # print("pls resize")
                     screen_dimension = pg.display.get_surface().get_size()
-                    # print(screen_dimension)
                     self.game_view.layout(screen_dimension)
+                    self.screen_dimension = screen_dimension
                     self.draw_game()
                     pg.display.update()
-
-    # def draw_money(self, money)
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_p:
+                        self.controller.on_p_pressed()
+                        self.draw_game()
+                        pg.display.update()
 
     def draw_game(self):
-        # print("drawing stuff")
         screen.fill(BACKRGOUND_COLOR)
         self.game_view.draw()
 

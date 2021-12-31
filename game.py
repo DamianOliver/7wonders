@@ -16,7 +16,7 @@ import random
 from enum import Enum
 
 NUM_PLAYERS = 1
-NUM_CARDS_PER_PLAYER = 7
+NUM_CARDS_PER_PLAYER = 30
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
 class R(Enum):
@@ -166,15 +166,20 @@ class Game:
     def create_deck(self):
         deck = [ \
             Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
-            Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+            # Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+            # Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
+            # Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+            # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+            Card("Super Palace", C.CIVIC, points = 9, cost = [R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD], num_players = 7),
             Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
-            Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
-            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
-            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
-            Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7)]
+            Card("Super Palace", C.CIVIC, points = 9, cost = [R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD], num_players = 7)]
+
         return deck
 
     def create_hands(self, deck):
@@ -203,9 +208,9 @@ class Player:
             self.money -= selected_card.money_cost
             self.num_shields += selected_card.num_shields
             self.money += selected_card.provides_money
-            print("added: ", self.num_shields)
+            # print("added: ", self.num_shields)
             self.cards.append(selected_card)
-            print("self.cards: ", self.cards)
+            # print("self.cards: ", self.cards)
             return True
         else:
             return False

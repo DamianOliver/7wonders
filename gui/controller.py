@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from gui.view import GameView
 from game import Game
 import pygame as pg
 
@@ -24,6 +25,7 @@ class Board:
     def __init__(self):
         self.needs_redraw = False
         self.discard = False
+        self.all_cards = False
         self.highlight_card_index = -1
 
     def request_redraw(self):
@@ -43,40 +45,50 @@ class GameController:
         self.board = board
 
     def on_hand_card_mouse_over(self, hand_card_index):
-        self.board.update_hand_card_highlight(hand_card_index)
+        if not self.board.all_cards:
+            self.board.update_hand_card_highlight(hand_card_index)
 
     def on_hand_card_mouse_down(self, hand_card_index):
-        if self.board.discard:
-            self.discard_card(hand_card_index)
-        else:
-            self.select_card(hand_card_index)
-        return
+        if not self.board.all_cards:
+            if self.board.discard:
+                self.discard_card(hand_card_index)
+            else:
+                self.select_card(hand_card_index)
+            return
 
     def discard_card(self, selected_card_number):
-        hand = self.game.current_player_hand()
-        # print("discarrrrrrrrrrrrrrrrd")
-        del hand[selected_card_number]
-        self.game.current_player().give_moneys_for_discard()
-        # print("MONEY: ", self.game.current_player().money)
-        self.game.current_player_finished()
-        self.board.request_redraw()
-
-    def on_discard_button_pressed(self):
-        if not self.board.discard:
-            self.board.discard = True
-            self.board.request_redraw()
-        else:
-            self.board.discard = False
-            self.board.request_redraw()
-
-    def select_card(self, selected_card_number):
-        hand = self.game.current_player_hand()
-        # print("selecting a card!!!")
-        selected_card = hand[selected_card_number]
-
-        if self.game.current_player().play_card(selected_card):
+        if not self.board.all_cards:
+            hand = self.game.current_player_hand()
             del hand[selected_card_number]
+            self.game.current_player().give_moneys_for_discard()
             self.game.current_player_finished()
             self.board.request_redraw()
 
-        
+    def on_discard_button_pressed(self):
+        if not self.board.all_cards:
+            if not self.board.discard:
+                self.board.discard = True
+                self.board.request_redraw()
+            else:
+                self.board.discard = False
+                self.board.request_redraw()
+
+    def select_card(self, selected_card_number):
+        if not self.board.all_cards:
+            hand = self.game.current_player_hand()
+            selected_card = hand[selected_card_number]
+
+            if self.game.current_player().play_card(selected_card):
+                del hand[selected_card_number]
+                self.game.current_player_finished()
+                self.board.request_redraw()
+
+    def on_all_cards_button_pressed(self):
+        print("function reached")
+        if self.board.all_cards == False:
+            self.board.all_cards = True
+        self.board.request_redraw()
+
+    def on_back_button_pressed(self):
+        self.board.all_cards = False
+        self.board.request_redraw()
