@@ -4,7 +4,7 @@ import math
 
 pg.init()
 
-SCREEN_DIMENSION = [1440, 800]
+SCREEN_DIMENSION = [1440, 1000]
 FRAME_TIME = 30
 
 SIDE_BAR_SIZE = (200, SCREEN_DIMENSION[1])
@@ -110,7 +110,7 @@ class Projectile:
     def __init__(self, pos, rotation, speed, damage, image, size):
         self.pos = pos
         self.rotation = rotation
-        self.speed = speed
+        self.speed = 0
         self.damage = damage
         self.image = image
         self.size = size
@@ -136,10 +136,11 @@ class Projectile:
         x = rotated_tip[0] + self.pos[0]
         y = rotated_tip[1] + self.pos[1]
 
-        print(abs(point[0] - player_point[0]), abs(point[1] - player_point[1]), player_size)
+        print(abs(point + x - player_point[0]), abs(y - player_point[1]), player_size)
 
-        if abs(point[0] - player_point[0]) < player_size and abs(point[1] - player_point[1]) < player_size:
-            print("collision")
+        pg.draw.circle(screen, (0, 0, 0), (x, y), 10)
+
+        if abs(point + x - player_point[0]) < player_size and abs(x - player_point[1]) < player_size:
             return True
         return False
 
@@ -177,7 +178,7 @@ class Game:
         self.player.weapon.draw()
         self.player.weapon.update_cooldown_time()
         for projectile in self.projectile_list:
-            if projectile.check_for_collision((projectile.pos[0] + projectile.size[0] * 0.5, projectile.pos[1] + projectile.size[1] * 0.5), self.player.pos, self.player.size):
+            if projectile.check_for_collision((projectile.pos[0] + projectile.size[0] * 0.5, projectile.pos[1]), self.player.pos, self.player.size):
                 self.player.health -= projectile.damage
                 self.projectile_list.remove(projectile)
             for player in self.bot_list:

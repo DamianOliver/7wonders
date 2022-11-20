@@ -25,6 +25,7 @@ class Board:
     def __init__(self):
         self.needs_redraw = False
         self.discard = False
+        self.play_wonder = False
         self.all_cards = False
         self.highlight_card_index = -1
 
@@ -52,6 +53,8 @@ class GameController:
         if not self.board.all_cards:
             if self.board.discard:
                 self.discard_card(hand_card_index)
+            elif self.board.play_wonder:
+                self.build_wonder(hand_card_index)
             else:
                 self.select_card(hand_card_index)
             return
@@ -64,13 +67,28 @@ class GameController:
             self.game.current_player_finished()
             self.board.request_redraw()
 
+    def build_wonder(self, selected_card_number):
+        if not self.board.all_cards:
+            hand = self.game.current_player_hand()
+            del hand[selected_card_number]
+            self.game.current_player().wonder_level += 1
+            self.game.current_player_finished()
+            self.board.request_redraw()
+
     def on_discard_button_pressed(self):
         if not self.board.all_cards:
-            if not self.board.discard:
+            if not self.board.discard and not self.board.play_wonder:
                 self.board.discard = True
                 self.board.request_redraw()
             else:
                 self.board.discard = False
+                self.board.play_wonder = False
+                self.board.request_redraw()
+
+    def on_wonder_button_pressed(self):
+        if not self.board.all_cards:
+            if not self.board.discard:
+                self.board.play_wonder = True
                 self.board.request_redraw()
 
     def select_card(self, selected_card_number):

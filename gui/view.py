@@ -32,8 +32,10 @@ GUILD_COLOR = (75,0,130)
 CARD_NAME_COLOR = (255, 255, 255)
 PLAY_HIGHLIGHT_COLOR = (255, 255, 0)
 DISCARD_HIGHLIGHT_COLOR = (255, 40, 40)
+WONDER_HIGHLIGHT_COLOR = (0, 0, 255)
 HIGHLIGHT_COLOR = PLAY_HIGHLIGHT_COLOR
 DISCARD_BUTTON_COLOR = (230, 20, 20)
+WONDER_BUTTON_COLOR = (255, 255, 20)
 All_CARDS_VIEW_BUTTON_COLOR = (40, 200, 50)
 
 BLAND_VALUE = 1
@@ -76,6 +78,14 @@ DISCARD_BUTTON_COLOR = (240, 20, 20)
 DISCARD_BUTTON_ROUND_DISTANCE = 8
 DISCARD_BUTTON_MARGIN = (20, 0)
 DISCARD_FONT_SIZE = 20
+
+BUTTON_MARGIN = 10
+
+WONDER_BUTTON_SIZE = (100, 50)
+WONDER_BUTTON_COLOR = (0, 0, 255)
+WONDER_BUTTON_ROUND_DISTANCE = 8
+WONDER_BUTTON_MARGIN = (20, 0)
+WONDER_FONT_SIZE = 20
 
 MONEY_MARGIN = (20, 0)
 MONEY_IMAGE_SIZE = (60, 60)
@@ -157,6 +167,7 @@ class GameView(View):
         super().__init__(game, board, controller)
         self.hand_view = HandView(game, board, controller)
         self.discard_button_view = DiscardButtonView(game, board, controller)
+        self.wonder_button_view = WonderButtonView(game, board, controller)
         self.money_view = MoneyView(game, board, controller)
         self.self_view = SelfView(game, board, controller)
         self.adjacent_resource_view = AdjacentResourceView(game, board, controller)
@@ -170,7 +181,7 @@ class GameView(View):
             player_view_list.append(self.player_view)
             location_index += 1
 
-        self.set_children([self.hand_view, self.discard_button_view, self.money_view, self.self_view, self.adjacent_resource_view, self.all_cards_view_button])
+        self.set_children([self.hand_view, self.discard_button_view, self.wonder_button_view, self.money_view, self.self_view, self.adjacent_resource_view, self.all_cards_view_button])
         self.children += player_view_list
         self.children.append(self.all_cards_view)
 
@@ -190,7 +201,7 @@ class SelfView(View):
         return bland_color
 
     def draw(self):
-        pg.draw.rect(screen, (100, 100, 100), (self.location, WONDER_BOARD_SIZE))
+        self.draw_wonder_board(self.game.players[self.game.current_player_index])
         self.draw_raw_resources(self.game.players[self.game.current_player_index])
         self.draw_manufactored_resources(self.game.players[self.game.current_player_index])
         self.draw_military(self.game.players[self.game.current_player_index])
@@ -199,6 +210,22 @@ class SelfView(View):
         self.draw_commercial(self.game.players[self.game.current_player_index])
         self.draw_guilds(self.game.players[self.game.current_player_index])
         self.draw_labels()
+
+    def draw_wonder_board(self, player):
+        load_string = "Images/" + player.wonder + ".png"
+        board_image = pg.image.load(load_string)
+        scaled_image = pg.transform.scale(board_image, WONDER_BOARD_SIZE)
+
+        screen.blit(scaled_image, self.location)
+
+        shading_size = (WONDER_BOARD_SIZE[0] * ( 3 - player.wonder_level) / 3, WONDER_BOARD_SIZE[1])
+        shading_location = (self.location[0] + WONDER_BOARD_SIZE[0] - shading_size[0], self.location[1])
+
+        greyout = pg.Surface((shading_size))
+        greyout.set_alpha(190)
+        greyout.fill((50, 50, 50))
+
+        screen.blit(greyout, shading_location)
 
     def load_resource_image(self, resource):
         return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
@@ -633,7 +660,8 @@ class MoneyView(View):
         hand = self.game.current_player_hand()
         HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
         LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2 - screen_dimension[1] / 7))
-        return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + MONEY_MARGIN[0], LAST_CARD_LOCATION[1] + MONEY_MARGIN[1] + DISCARD_BUTTON_SIZE[1] * 2)
+        # return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + MONEY_MARGIN[0], LAST_CARD_LOCATION[1] + MONEY_MARGIN[1] + DISCARD_BUTTON_SIZE[1] * 2)
+        return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + MONEY_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_SIZE[1] * 2 + BUTTON_MARGIN * 2)
 
     def draw(self):
         money_image = pg.image.load('Images/money_image.png')
@@ -837,7 +865,7 @@ class CardView(View):
         self.draw_hand_card_name(card.name, self.location)
         self.draw_hand_card_provides(card, self.location)
         self.draw_hand_card_cost(card, self.location)
-        if not self.board.discard:
+        if not self.board.discard and not self.board.play_wonder:
             self.draw_hand_card_greyout(card)
 
     def draw_hand_card_greyout(self, card):
@@ -846,7 +874,6 @@ class CardView(View):
             greyout.set_alpha(190)
             greyout.fill(BACKRGOUND_COLOR)
             screen.blit(greyout, (self.location[0] - ROUND_DISTANCE, self.location[1] - ROUND_DISTANCE))
-
 
     def draw_hand_card_background(self, card, location):
         color = CARD_COLORS.get(card.card_type, (0, 0, 0))
@@ -953,8 +980,13 @@ class CardView(View):
 
 
     def draw_highlight(self, card):
-        if self.game.current_player().can_play_card(card) or self.board.discard:
-            highlight_color = DISCARD_HIGHLIGHT_COLOR if self.board.discard else PLAY_HIGHLIGHT_COLOR
+        if self.game.current_player().can_play_card(card) or self.board.discard or self.board.play_wonder:
+            if self.board.discard:
+                highlight_color = DISCARD_HIGHLIGHT_COLOR
+            elif self.board.play_wonder:
+                highlight_color = WONDER_HIGHLIGHT_COLOR
+            else:
+                highlight_color = PLAY_HIGHLIGHT_COLOR
             highlight_rect_bounds = (self.location[0] - HIGHLIGHT_DISTANCE/2, self.location[1] - HIGHLIGHT_DISTANCE/2), \
                                     (HAND_CARD_SIZE[0] + HIGHLIGHT_DISTANCE, HAND_CARD_SIZE[1] + HIGHLIGHT_DISTANCE)
             pg.draw.rect(screen,
@@ -981,7 +1013,7 @@ class DiscardButtonView(View):
         return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
 
     def draw(self):
-        if not self.board.discard:
+        if not self.board.discard and not self.board.play_wonder:
             self.draw_discard_button()
         else:
             self.draw_cancel_button()
@@ -1011,6 +1043,47 @@ class DiscardButtonView(View):
         if event.type == pg.MOUSEBUTTONUP:
             if self.is_event_inside_discard_button():
                 self.controller.on_discard_button_pressed()
+                return True
+        return False
+
+class WonderButtonView(View):
+    def __init__(self, game, board, controller):
+        super().__init__(game, board, controller)
+        self.set_children([])
+        self.location = (0, 0)
+
+    def layout(self, screen_dimension):
+        self.location = self.calc_location(screen_dimension)
+
+    def calc_location(self, screen_dimension):
+        # uses a lot of discard button stuff
+        hand = self.game.current_player_hand()
+        HAND_MARGIN = (screen_dimension[0] - (HAND_SPACING + HAND_CARD_SIZE[0])*len(hand) + HAND_SPACING)/2
+        LAST_CARD_LOCATION = ((HAND_MARGIN + (len(hand) - 1) * (HAND_CARD_SIZE[0] + HAND_SPACING), screen_dimension[1]/2 - HAND_CARD_SIZE[1]/2 - screen_dimension[1] / 7))
+        return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1] + DISCARD_BUTTON_SIZE[1] + BUTTON_MARGIN)
+
+    def draw(self):
+        if not self.board.play_wonder and not self.board.discard:
+            self.draw_wonder_button()
+
+    def draw_wonder_button(self):
+        pg.draw.rect(screen, pg.Color(WONDER_BUTTON_COLOR), pg.Rect(self.location, WONDER_BUTTON_SIZE), border_radius=int(WONDER_BUTTON_ROUND_DISTANCE))
+        wonder_font = pg.font.SysFont("georgia", WONDER_FONT_SIZE)
+        wonder_text = wonder_font.render("Wonder", True, (0, 0, 0))
+        wonder_text_rect = wonder_text.get_rect(center = (self.location[0] + WONDER_BUTTON_SIZE[0]/2, self.location[1] + WONDER_BUTTON_SIZE[1]/2))
+        screen.blit(wonder_text, wonder_text_rect)
+
+    def is_event_inside_wonder_button(self):
+        return \
+            pg.mouse.get_pos()[0] > self.location[0] and \
+            pg.mouse.get_pos()[0] < self.location[0] + WONDER_BUTTON_SIZE[0] and \
+            pg.mouse.get_pos()[1] > self.location[1] and \
+            pg.mouse.get_pos()[1] < self.location[1] + WONDER_BUTTON_SIZE[1]
+    
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            if self.is_event_inside_wonder_button():
+                self.controller.on_wonder_button_pressed()
                 return True
         return False
 

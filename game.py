@@ -54,11 +54,17 @@ class S(Enum):
     def __str__(self):
         return str(self.value)
 
+class W(Enum):
+    ALEXANDRIA = "Alexandria"
+
 class Game:
     def __init__(self):
         self.turn = 0
         self.current_player_index = 0
-        self.players = [Player(i) for i in range(NUM_PLAYERS)]
+
+        wonder_list = self.assign_wonders()
+
+        self.players = [Player(i, wonder_list[i]) for i in range(NUM_PLAYERS)]
         self.hands = []
         self.deck = self.create_deck()
         self.hands = self.create_hands(self.deck)
@@ -191,12 +197,20 @@ class Game:
             hands.append(self.deck[start:end])
         return hands
 
+    def assign_wonders(self):
+        # fix this to use enum class one day
+        wonder_list = ["Alexandria", "Alexandria", "Alexandria", "Alexandria", "Alexandria", "Alexandria", "Alexandria"]
+        random.shuffle(wonder_list)
+        return wonder_list
+
 class Player:
-    def __init__(self, player_number):
+    def __init__(self, player_number, wonder):
         self.player_number = player_number
+        self.wonder = wonder
         self.cards = []
         self.money = 0
         self.num_shields = 0
+        self.wonder_level = 0
 
     def give_moneys_for_discard(self):
         self.money += 3
