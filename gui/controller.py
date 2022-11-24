@@ -65,15 +65,19 @@ class GameController:
             del hand[selected_card_number]
             self.game.current_player().give_moneys_for_discard()
             self.game.current_player_finished()
+            self.board.discard = False
             self.board.request_redraw()
 
     def build_wonder(self, selected_card_number):
         if not self.board.all_cards:
-            hand = self.game.current_player_hand()
-            del hand[selected_card_number]
-            self.game.current_player().wonder_level += 1
-            self.game.current_player_finished()
-            self.board.request_redraw()
+            if self.game.current_player().play_card(self.game.current_player().wonder.layers_list[self.game.current_player().wonder_level + 1]):
+                hand = self.game.current_player_hand()
+                del hand[selected_card_number]
+                self.game.current_player().wonder_level += 1
+                hand = self.game.current_player_hand()
+                self.game.current_player_finished()
+                self.board.play_wonder = False
+                self.board.request_redraw()
 
     def on_discard_button_pressed(self):
         if not self.board.all_cards:
@@ -88,8 +92,9 @@ class GameController:
     def on_wonder_button_pressed(self):
         if not self.board.all_cards:
             if not self.board.discard:
-                self.board.play_wonder = True
-                self.board.request_redraw()
+                if self.game.current_player().wonder_level < len(self.game.current_player().wonder.layers_list) - 1:
+                    self.board.play_wonder = True
+                    self.board.request_redraw()
 
     def select_card(self, selected_card_number):
         if not self.board.all_cards:
@@ -102,7 +107,6 @@ class GameController:
                 self.board.request_redraw()
 
     def on_all_cards_button_pressed(self):
-        print("function reached")
         if self.board.all_cards == False:
             self.board.all_cards = True
         self.board.request_redraw()

@@ -29,6 +29,7 @@ MANUFACTORED_RESOURCE_COLOR = (125,125,125)
 COMMERCIAL_COLOR = (200, 170, 20)
 CIVIC_COLOR = (0, 0, 200)
 GUILD_COLOR = (75,0,130)
+WONDER_C_COLOR = (0, 0, 0)
 CARD_NAME_COLOR = (255, 255, 255)
 PLAY_HIGHLIGHT_COLOR = (255, 255, 0)
 DISCARD_HIGHLIGHT_COLOR = (255, 40, 40)
@@ -47,6 +48,7 @@ CARD_COLORS = {
     C.COMMERCIAL: COMMERCIAL_COLOR,
     C.CIVIC: CIVIC_COLOR,
     C.MFG_R: MANUFACTORED_RESOURCE_COLOR,
+    C.WONDER_C: WONDER_C_COLOR,
 }
 
 HAND_CARD_TEXT_MARGIN = 10
@@ -121,6 +123,7 @@ ALL_CARDS_MARGIN = (30, 30)
 BACK_ARROW_SIZE = (50, 50)
 
 NEIGHBOR_RESOURCE_SIZE = (40, 40)
+NEIGHBOR_SLASH_SIZE = (18.8, 36)
 
 WONDER_BOARD_SIZE = (800, 300)
 
@@ -212,13 +215,22 @@ class SelfView(View):
         self.draw_labels()
 
     def draw_wonder_board(self, player):
-        load_string = "Images/" + player.wonder + ".png"
-        board_image = pg.image.load(load_string)
+        board_image = player.wonder.image
         scaled_image = pg.transform.scale(board_image, WONDER_BOARD_SIZE)
 
         screen.blit(scaled_image, self.location)
 
-        shading_size = (WONDER_BOARD_SIZE[0] * ( 3 - player.wonder_level) / 3, WONDER_BOARD_SIZE[1])
+        GREYOUT_MARGIN = 45
+
+        shading_size = [(WONDER_BOARD_SIZE[0] - GREYOUT_MARGIN * 2) * ( 3 - player.wonder_level) / 3, WONDER_BOARD_SIZE[1]]
+
+        if player.wonder_level > 0:
+            shading_size[0] -= GREYOUT_MARGIN
+        if player.wonder_level > 2:
+            shading_size[0] -= GREYOUT_MARGIN
+
+        shading_size[0] += GREYOUT_MARGIN * 2
+
         shading_location = (self.location[0] + WONDER_BOARD_SIZE[0] - shading_size[0], self.location[1])
 
         greyout = pg.Surface((shading_size))
@@ -531,6 +543,7 @@ class AdjacentResourceView(View):
         super().__init__(game, board, controller)
         self.location = (0, 0)
         self.right_margin = 0
+        self._resource_dictionary = {}
 
     def draw(self):
         left_margin = 10
@@ -558,26 +571,25 @@ class AdjacentResourceView(View):
         total_papyrus = 0
         total_silk = 0
         either_or_list = []
-        for i in range(len(player.cards)):
-            for resource in player.cards[i].provides_resources:
-                if resource == (R.STONE,):
-                    total_stone += 1
-                elif resource == (R.ORE,):
-                    total_ore += 1
-                elif resource == (R.BRICK,):
-                    total_brick += 1
-                elif resource == (R.WOOD,):
-                    total_wood += 1
-                elif resource == (R.GLASS,):
-                    total_glass += 1
-                elif resource == (R.PAPYRUS,):
-                    total_papyrus += 1
-                elif resource == (R.SILK,):
-                    total_silk += 1
-                elif len(player.cards[i].provides_resources[0]) > 1:
-                    either_or_list.append(player.cards[i])
-
-
+        for i, card in enumerate(player.cards):
+            if card.card_type == C.RAW_R or card.card_type == C.MFG_R:
+                for resource in player.cards[i].provides_resources:
+                    if resource == (R.STONE,):
+                        total_stone += 1
+                    elif resource == (R.ORE,):
+                        total_ore += 1
+                    elif resource == (R.BRICK,):
+                        total_brick += 1
+                    elif resource == (R.WOOD,):
+                        total_wood += 1
+                    elif resource == (R.GLASS,):
+                        total_glass += 1
+                    elif resource == (R.PAPYRUS,):
+                        total_papyrus += 1
+                    elif resource == (R.SILK,):
+                        total_silk += 1
+                    elif len(player.cards[i].provides_resources[0]) > 1:
+                        either_or_list.append(player.cards[i])
 
         total_resources = total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus + total_silk
 
@@ -608,13 +620,13 @@ class AdjacentResourceView(View):
         for i in range(total_glass):
             glass_image = pg.image.load('Images/glass.png')
             glass_image = pg.transform.scale(glass_image, NEIGHBOR_RESOURCE_SIZE)
-            glass_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int(i + total_stone + total_ore + total_brick + total_wood / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
+            glass_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(glass_image, glass_image_pos)
 
         for i in range(total_papyrus):
             papyrus_image = pg.image.load('Images/papyrus.png')
             papyrus_image = pg.transform.scale(papyrus_image, NEIGHBOR_RESOURCE_SIZE)
-            papyrus_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood + total_glass) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood + total_glass)   / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
+            papyrus_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood + total_glass) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood + total_glass) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(papyrus_image, papyrus_image_pos)
 
         for i in range(total_silk):
@@ -622,27 +634,39 @@ class AdjacentResourceView(View):
             silk_image = pg.transform.scale(silk_image, NEIGHBOR_RESOURCE_SIZE)
             silk_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(silk_image, silk_image_pos)
+        
+        height_spacing = (int((total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus + total_silk) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)
 
-        for i in range(len(either_or_list)):
-            card = either_or_list[i]
-            for i in range(len(card.provides_resources[0])):
-                resource_image = self.load_resource_image(resource=card.provides_resources[0][i])
-                resource_image = pg.transform.scale(resource_image, NEIGHBOR_RESOURCE_SIZE)
-                resource_image_pos = ()
-                screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
-                total_spacing += (FILE_PROVIDES_IMAGE_SIZE[0] + 4)
-                if i != len(card.provides_resources[0]) - 1:
-                    slash = pg.image.load('Images/slash.png')
-                    slash = pg.transform.scale(slash, FILE_SLASH_SIZE)
-                    slash_pos = (self.location[0] + 85 + ((total_glass + total_papyrus + total_silk) * (4 + FILE_PROVIDES_IMAGE_SIZE[0])) + total_spacing, self.location[1] - (NUM_FILES - 1) * SELF_FILE_HEIGHT)
-                    screen.blit(slash, (slash_pos[0], slash_pos[1]))
-                    total_spacing += (FILE_SLASH_SIZE[0] + 2) 
+        tuple_spacing = 0
+        last_pos = 0
+
+        for i, card in enumerate(either_or_list):
+            if i % 2 == 0:
+                tuple_spacing += NEIGHBOR_RESOURCE_SIZE[1] + 4
+                last_pos = margin
+            for t, tuple in enumerate(card.provides_resources):
+                slash_margin = 0
+
+                for r, resource in enumerate(tuple):
+                    resource_image = self.load_resource_image(resource=card.provides_resources[0][r])
+                    resource_image = pg.transform.scale(resource_image, NEIGHBOR_RESOURCE_SIZE)
+                    resource_margin = r * (NEIGHBOR_RESOURCE_SIZE[0] + 0)
+                    resource_location = [self.location[0] + resource_margin + slash_margin + last_pos, self.location[1] + height_spacing + tuple_spacing]
+                    screen.blit(resource_image, resource_location)
+                    if r != len(card.provides_resources[0]) - 1:
+                        slash = pg.image.load('Images/slash.png')
+                        slash = pg.transform.scale(slash, NEIGHBOR_SLASH_SIZE)
+                        slash_pos = (resource_location[0] + 0 + NEIGHBOR_RESOURCE_SIZE[0], resource_location[1] + 2)
+                        screen.blit(slash, slash_pos)
+                        slash_margin += NEIGHBOR_SLASH_SIZE[0] + 0
+                last_pos = resource_location[0] + NEIGHBOR_RESOURCE_SIZE[0] + 10
+                    
+            
 
     # def load_resource_image(self, resource):
     #     return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
 
-
-
+                    
     def layout(self, screen_dimension):
         self.location = self.calc_location(screen_dimension)
         self.right_margin = screen_dimension[0] - 10 - ((NEIGHBOR_RESOURCE_SIZE[0] + 4) * 5)
@@ -842,7 +866,7 @@ class CardView(View):
             if event.type == pg.MOUSEMOTION:
                 self.controller.on_hand_card_mouse_over(self.hand_card_index)
                 return True
-            elif event.type == pg.MOUSEBUTTONUP:  
+            elif event.type == pg.MOUSEBUTTONUP:
                 self.controller.on_hand_card_mouse_down(self.hand_card_index)
                 return True
         return False
@@ -892,13 +916,13 @@ class CardView(View):
             hand_resource_margin = 0
         else:
             hand_resource_margin = 20
-        if card.card_type == C.MILITARY:
+        if card.num_shields > 0:
             for i in range(card.num_shields):
                 shield = pg.image.load('Images/shield.png')
                 shield = pg.transform.scale(shield, SHIELD_SIZE)
                 shield_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / card.num_shields*(i+1/2) - SHIELD_SIZE[0]/2, self.location[1])
                 screen.blit(shield, (shield_pos[0], shield_pos[1]))
-        elif card.card_type == C.SCIENCE:
+        if card.card_type == C.SCIENCE or card.card_type == C.WONDER_C:
             for i in range(len(card.provides_sciences)):
                 if card.provides_sciences[i] == S.TABLET:
                     science_symbol_image = pg.image.load('Images/tablet.png')
@@ -909,7 +933,7 @@ class CardView(View):
                 science_symbol_image = pg.transform.scale(science_symbol_image, SCIENCE_SYMBOL_SIZE)
                 science_symbol_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_sciences)*(i+1/2) - SCIENCE_SYMBOL_SIZE[0]/2, self.location[1])
                 screen.blit(science_symbol_image, (science_symbol_image_pos[0], science_symbol_image_pos[1]))
-        elif card.card_type == C.CIVIC:
+        if card.points != 0:
             points_image = pg.image.load('Images/civic_points.png')
             points_image = pg.transform.scale(points_image, CIVIC_POINTS_SIZE)
             points_image_pos = (location[0] + HAND_CARD_SIZE[0]/2 - CIVIC_POINTS_SIZE[0]/2, location[1])
@@ -921,7 +945,7 @@ class CardView(View):
             points_text_pos = (points_image_pos[0] + CIVIC_POINTS_SIZE[0]/2 - points_text_size[0]/2, points_image_pos[1] + CIVIC_POINTS_SIZE[1]/2 - points_text_size[1]/2 - 3)
             screen.blit(points_text, points_text_pos)
 
-        elif card.card_type == C.RAW_R or card.card_type == C.MFG_R or card.card_type == C.COMMERCIAL:
+        if len(card.provides_resources) > 0:
             for a in range(len(card.provides_resources)):
                 if len(card.provides_resources[a]) > 1:
                     choice_resource_hand_size = (60 - len(card.provides_resources[a])*10, 60 - len(card.provides_resources[a])*10)
@@ -1063,7 +1087,7 @@ class WonderButtonView(View):
         return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1] + DISCARD_BUTTON_SIZE[1] + BUTTON_MARGIN)
 
     def draw(self):
-        if not self.board.play_wonder and not self.board.discard:
+        if not self.board.play_wonder and not self.board.discard and self.game.current_player().wonder_level < len(self.game.current_player().wonder.layers_list) - 1:
             self.draw_wonder_button()
 
     def draw_wonder_button(self):

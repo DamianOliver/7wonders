@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import random
+import pygame as pg
 from enum import Enum
 
 NUM_PLAYERS = 1
@@ -42,6 +43,7 @@ class C(Enum):
     MILITARY = "Military"
     CIVIC = "Civic"
     GUILD = "Guild"
+    WONDER_C = "Wonder"
 
 class S(Enum):
     TABLET = "Tablet"
@@ -54,17 +56,18 @@ class S(Enum):
     def __str__(self):
         return str(self.value)
 
-class W(Enum):
-    ALEXANDRIA = "Alexandria"
-
 class Game:
     def __init__(self):
         self.turn = 0
         self.current_player_index = 0
 
         wonder_list = self.assign_wonders()
+        self.players = []
+        
+        for i in range(NUM_PLAYERS):
+            self.players.append(Player(i, wonder_list[i]))
+            self.players[i].play_card(wonder_list[i].layers_list[0])
 
-        self.players = [Player(i, wonder_list[i]) for i in range(NUM_PLAYERS)]
         self.hands = []
         self.deck = self.create_deck()
         self.hands = self.create_hands(self.deck)
@@ -171,20 +174,32 @@ class Game:
 
     def create_deck(self):
         deck = [ \
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)], money_cost=10),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)], cost = [R.WOOD, R.BRICK]),
             Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
-            # Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
-            # Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
-            # Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
-            Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
             # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
-            # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
-            Card("Super Palace", C.CIVIC, points = 9, cost = [R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD], num_players = 7),
-            Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
-            Card("Super Palace", C.CIVIC, points = 9, cost = [R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD], num_players = 7)]
+            # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+            # Card("IN GLASS HOUSES", C.MFG_R, provides_resources = [(R.GLASS,), (R.GLASS,), (R.BRICK,)]),
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+
+    #         Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+    #         Card("LITERAL ROCK", C.MFG_R, provides_resources = [(R.STONE,), (R.STONE,)], cost = [R.WOOD], num_players = 7),
+    #         Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+    #         # Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
+    #         # Card("PAPER HOUSE", C.MFG_R, provides_resources = [(R.PAPYRUS,), (R.PAPYRUS,)], cost = [R.WOOD], num_players = 7),
+    #         # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+    #         # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+    #         # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
+    #         # Card("BIG MINE", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,)], cost = [R.WOOD], num_players = 7),
+    #         # Card("Super Palace", C.CIVIC, points = 9, cost = [R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD], num_players = 7),
+    #         # Card("TOWEL HOUSE", C.MFG_R, provides_resources = [(R.SILK,), (R.SILK,)], cost = [R.WOOD], num_players = 7),
+    #         # Card("Super Palace", C.CIVIC, points = 9, cost = [R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD, R.WOOD], num_players = 7)]
+        ]
 
         return deck
 
@@ -198,8 +213,10 @@ class Game:
         return hands
 
     def assign_wonders(self):
-        # fix this to use enum class one day
-        wonder_list = ["Alexandria", "Alexandria", "Alexandria", "Alexandria", "Alexandria", "Alexandria", "Alexandria"]
+        alexandria_card_list = [Card("Alexandria Start", C.MFG_R, provides_resources = [(R.GLASS,)]), Card("Alexandria One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.BRICK, R.ORE, R.WOOD, R.STONE)], cost = [R.ORE, R.ORE]), Card("Alexandria Three", C.WONDER_C, points = 7, cost = [R.GLASS, R.GLASS])]
+
+        Alexandria = Wonder("Alexandria", pg.image.load("Images/Alexandria.png"), alexandria_card_list)
+        wonder_list = [Alexandria, Alexandria, Alexandria, Alexandria, Alexandria, Alexandria, Alexandria]
         random.shuffle(wonder_list)
         return wonder_list
 
@@ -317,3 +334,11 @@ class Card:
     def __str__(self):
         return "{}: Card Type: {}  Points = {}, Resources = {}, Science = {}, Shields = {}, Cost {}".format(
             self.name, self.card_type, self.points, self.provides_resources, self.provides_sciences, self.num_shields, self.cost)
+    
+class Wonder:
+    def __init__(self, name, image, layers_list):
+        self.name = name
+        self.image = image
+        self.layers_list = layers_list
+
+

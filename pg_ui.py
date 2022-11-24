@@ -24,8 +24,6 @@ hand = Game().hands[(i + Game().turn) % len(Game().hands)]
 
 screen_dimension = (1440, 1000)
 
-
-
 DISCARD_BUTTON_SIZE = (100, 50)
 DISCARD_BUTTON_COLOR = (240, 20, 20)
 DISCARD_BUTTON_ROUND_DISTANCE = 8
@@ -75,9 +73,9 @@ class PgUi:
                 elif event.type == pg.QUIT:
                     pg.quit()
                     return
-                elif event.type == pg.WINDOWEVENT and event.__dict__["event"] == pg.WINDOWEVENT_CLOSE:
-                    pg.quit()
-                    return
+                # elif event.type == pg.WINDOWEVENT and event.__dict__["event"] == pg.WINDOWEVENT_CLOSE:
+                #     pg.quit()
+                #     return
                 elif event.type == pg.VIDEORESIZE:
                     screen_dimension = pg.display.get_surface().get_size()
                     self.game_view.layout(screen_dimension)
