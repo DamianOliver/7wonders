@@ -66,17 +66,20 @@ class GameController:
             self.game.current_player().give_moneys_for_discard()
             self.game.current_player_finished()
             self.board.discard = False
+            self.on_end_turn()
             self.board.request_redraw()
 
     def build_wonder(self, selected_card_number):
         if not self.board.all_cards:
-            if self.game.current_player().play_card(self.game.current_player().wonder.layers_list[self.game.current_player().wonder_level + 1]):
+            current_player = self.game.current_player()
+            if current_player.play_card(current_player.wonder.layers_list[current_player.wonder_level + 1]):
                 hand = self.game.current_player_hand()
                 del hand[selected_card_number]
-                self.game.current_player().wonder_level += 1
+                current_player.wonder_level += 1
                 hand = self.game.current_player_hand()
                 self.game.current_player_finished()
                 self.board.play_wonder = False
+                self.on_end_turn()
                 self.board.request_redraw()
 
     def on_discard_button_pressed(self):
@@ -96,6 +99,34 @@ class GameController:
                     self.board.play_wonder = True
                     self.board.request_redraw()
 
+    def on_resource_selected(self, side, resource_map):
+        if not self.board.all_cards:
+            current_player = self.game.current_player()
+            if side == "l":
+                if current_player.money >= current_player.left_cost:
+                    current_player.spent_money_l = 0
+                    current_player.bought_resources = []
+                    for resource_tuple in resource_map:
+                        for resource in resource_tuple:
+                            if resource[2]:
+                                current_player.bought_resources.append(resource)
+                                current_player.spent_money_l += current_player.left_cost
+                # give left player money
+            else:
+                if current_player.money >= current_player.right_cost:
+                    current_player.spent_money_r = 0
+                    current_player.bought_resources = []
+                    for resource_tuple in resource_map:
+                        for resource in resource_tuple:
+                            if resource[2]:
+                                current_player.bought_resources.append(resource)
+                                current_player.spent_money_r += current_player.right_cost
+
+            # save difference to decide how much money to give - I'm sure that would never cause any bug
+                # give correct player money
+
+            self.board.request_redraw()
+
     def select_card(self, selected_card_number):
         if not self.board.all_cards:
             hand = self.game.current_player_hand()
@@ -104,6 +135,7 @@ class GameController:
             if self.game.current_player().play_card(selected_card):
                 del hand[selected_card_number]
                 self.game.current_player_finished()
+                self.on_end_turn()
                 self.board.request_redraw()
 
     def on_all_cards_button_pressed(self):
@@ -114,3 +146,9 @@ class GameController:
     def on_back_button_pressed(self):
         self.board.all_cards = False
         self.board.request_redraw()
+
+    def on_end_turn(self):
+        current_player = self.game.current_player()
+        current_player.money += (-current_player.spent_money_l - current_player.spent_money_r)
+        current_player.spent_money_l = 0
+        current_player.spent_money_r = 0

@@ -174,13 +174,13 @@ class Game:
 
     def create_deck(self):
         deck = [ \
+            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)], cost = [R.GLASS, R.GLASS]),
             Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
             Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
-            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
-            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
+            # Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
             Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)]),
             Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)], money_cost=10),
-            Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)], cost = [R.WOOD, R.BRICK]),
+            # Card("Options", C.RAW_R, provides_resources = [(R.WOOD, R.STONE)], cost = [R.WOOD, R.BRICK]),
             Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
             # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
             # Card("RAINFOREST", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)], num_players = 7),
@@ -225,9 +225,14 @@ class Player:
         self.player_number = player_number
         self.wonder = wonder
         self.cards = []
-        self.money = 0
+        self.money = 13
         self.num_shields = 0
         self.wonder_level = 0
+        self.bought_resources = []
+        self.left_cost = 3
+        self.right_cost = 3
+        self.spent_money_l = 0
+        self.spent_money_r = 0
 
     def give_moneys_for_discard(self):
         self.money += 3
@@ -239,9 +244,7 @@ class Player:
             self.money -= selected_card.money_cost
             self.num_shields += selected_card.num_shields
             self.money += selected_card.provides_money
-            # print("added: ", self.num_shields)
             self.cards.append(selected_card)
-            # print("self.cards: ", self.cards)
             return True
         else:
             return False
@@ -249,7 +252,7 @@ class Player:
     def can_play_card(self, card):
         resource_tuples = self.available_resources_tuples(self.cards)
 
-        if self.has_resources_for_card(card.cost, resource_tuples) and self.money >= card.money_cost:
+        if self.has_resources_for_card(card.cost, resource_tuples) and self.money - self.spent_money_l - self.spent_money_r >= card.money_cost:
             return True
         else:
             return False
@@ -261,6 +264,7 @@ class Player:
         for card in cards:
             for resource_tuple in card.provides_resources:
                 resource_tuples.append(resource_tuple)
+        resource_tuples += self.bought_resources
         return resource_tuples
 
     def has_resources_for_card(self, cost, resource_tuples):

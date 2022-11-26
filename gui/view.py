@@ -123,7 +123,7 @@ ALL_CARDS_MARGIN = (30, 30)
 BACK_ARROW_SIZE = (50, 50)
 
 NEIGHBOR_RESOURCE_SIZE = (40, 40)
-NEIGHBOR_SLASH_SIZE = (18.8, 36)
+NEIGHBOR_SLASH_SIZE = (19, 36)
 
 WONDER_BOARD_SIZE = (800, 300)
 
@@ -543,7 +543,8 @@ class AdjacentResourceView(View):
         super().__init__(game, board, controller)
         self.location = (0, 0)
         self.right_margin = 0
-        self._resource_dictionary = {}
+        self.resource_map_r = []
+        self.resource_map_l = []
 
     def draw(self):
         left_margin = 10
@@ -557,12 +558,14 @@ class AdjacentResourceView(View):
         #     else:
         #         self.draw_resources(self.game.players[self.game.current_player_index - 1], left_margin)
         self.draw_resources(self.game.players[self.game.current_player_index], left_margin)
-        self.draw_resources(self.game.players[self.game.current_player_index ], self.right_margin)
+        self.draw_resources(self.game.players[self.game.current_player_index], self.right_margin)
+        self.draw_left_right_highlight()
 
     def load_resource_image(self, resource):
         return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
 
     def draw_resources(self, player, margin):
+        map_list = []
         total_stone = 0
         total_ore = 0
         total_brick = 0
@@ -598,44 +601,54 @@ class AdjacentResourceView(View):
             stone_image = pg.transform.scale(stone_image, NEIGHBOR_RESOURCE_SIZE)
             stone_image_pos = (self.location[0] + margin + ((i % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int(i / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(stone_image, stone_image_pos)
+            map_list.append([[stone_image_pos, R.STONE, False]])
 
         for i in range(total_ore):
             ore_image = pg.image.load('Images/ore.png')
             ore_image = pg.transform.scale(ore_image, NEIGHBOR_RESOURCE_SIZE)
             ore_image_pos = (self.location[0] + margin + (((i + total_stone) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(ore_image, ore_image_pos)
+            map_list.append([[ore_image_pos, R.ORE, False]])
 
         for i in range(total_brick):
             brick_image = pg.image.load('Images/brick.png')
             brick_image = pg.transform.scale(brick_image, NEIGHBOR_RESOURCE_SIZE)
             brick_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(brick_image, brick_image_pos)
+            map_list.append([[brick_image_pos, R.BRICK, False]])
 
         for i in range(total_wood):
             wood_image = pg.image.load('Images/wood.png')
             wood_image = pg.transform.scale(wood_image, NEIGHBOR_RESOURCE_SIZE)
             wood_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(wood_image, wood_image_pos)
+            map_list.append([[wood_image_pos, R.WOOD, False]])
 
         for i in range(total_glass):
             glass_image = pg.image.load('Images/glass.png')
             glass_image = pg.transform.scale(glass_image, NEIGHBOR_RESOURCE_SIZE)
             glass_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(glass_image, glass_image_pos)
+            map_list.append([[glass_image_pos, R.GLASS, False]])
 
         for i in range(total_papyrus):
             papyrus_image = pg.image.load('Images/papyrus.png')
             papyrus_image = pg.transform.scale(papyrus_image, NEIGHBOR_RESOURCE_SIZE)
             papyrus_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood + total_glass) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood + total_glass) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(papyrus_image, papyrus_image_pos)
+            map_list.append([[papyrus_image_pos, R.PAPYRUS, False]])
 
         for i in range(total_silk):
             silk_image = pg.image.load('Images/silk.png')
             silk_image = pg.transform.scale(silk_image, NEIGHBOR_RESOURCE_SIZE)
             silk_image_pos = (self.location[0] + margin + (((i + total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus) % 5) * (4 + NEIGHBOR_RESOURCE_SIZE[0])), self.location[1] + ((int((i + total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)))
             screen.blit(silk_image, silk_image_pos)
+            map_list.append([[silk_image_pos, R.SILK, False]])
         
         height_spacing = (int((total_stone + total_ore + total_brick + total_wood + total_glass + total_papyrus + total_silk) / 5)) * (NEIGHBOR_RESOURCE_SIZE[1] + 4)
+
+        if total_resources % 5 == 0:
+            height_spacing -= NEIGHBOR_RESOURCE_SIZE[1] + 4
 
         tuple_spacing = 0
         last_pos = 0
@@ -646,13 +659,14 @@ class AdjacentResourceView(View):
                 last_pos = margin
             for t, tuple in enumerate(card.provides_resources):
                 slash_margin = 0
-
+                location_list = []
                 for r, resource in enumerate(tuple):
                     resource_image = self.load_resource_image(resource=card.provides_resources[0][r])
                     resource_image = pg.transform.scale(resource_image, NEIGHBOR_RESOURCE_SIZE)
                     resource_margin = r * (NEIGHBOR_RESOURCE_SIZE[0] + 0)
                     resource_location = [self.location[0] + resource_margin + slash_margin + last_pos, self.location[1] + height_spacing + tuple_spacing]
                     screen.blit(resource_image, resource_location)
+                    location_list.append([resource_location, card.provides_resources[0][r], False])
                     if r != len(card.provides_resources[0]) - 1:
                         slash = pg.image.load('Images/slash.png')
                         slash = pg.transform.scale(slash, NEIGHBOR_SLASH_SIZE)
@@ -660,8 +674,48 @@ class AdjacentResourceView(View):
                         screen.blit(slash, slash_pos)
                         slash_margin += NEIGHBOR_SLASH_SIZE[0] + 0
                 last_pos = resource_location[0] + NEIGHBOR_RESOURCE_SIZE[0] + 10
-                    
-            
+                map_list.append(location_list)
+
+        if margin > 100:
+            if self.game.current_player().spent_money_r == 0 and self.game.current_player().spent_money_r == 0:
+                self.resource_map_r = map_list
+            elif len(map_list) != len(self.resource_map_r):
+                    self.resource_map_r = map_list
+            else:
+                for r, resource_tuple in enumerate(map_list):
+                    for i in range(len(resource_tuple)):
+                        if resource_tuple[i][0] != self.resource_map_r[r][i][0]:
+                            self.resource_map_r = map_list
+                        elif resource_tuple[i][1] != self.resource_map_r[r][i][1]:
+                            self.resource_map_r = map_list
+        else:
+            if self.game.current_player().spent_money_l == 0 and self.game.current_player().spent_money_r == 0:
+                self.resource_map_l = map_list
+            elif len(map_list) != len(self.resource_map_l):
+                    self.resource_map_l = map_list
+            else:
+                for r, resource_tuple in enumerate(map_list):
+                    for i in range(len(resource_tuple)):
+                        if resource_tuple[i][0] != self.resource_map_l[r][i][0]:
+                            print()
+                            self.resource_map_l = map_list
+                        elif resource_tuple[i][1] != self.resource_map_l[r][i][1]:
+                            self.resource_map_l = map_list
+
+    def draw_left_right_highlight(self):
+        self.draw_image_highlights(self.resource_map_l)
+        self.draw_image_highlights(self.resource_map_r)
+
+    def draw_image_highlights(self, resource_list):
+        for tuple in resource_list:
+            for resource in tuple:
+                # print("resource:", resource)
+                if resource[2]:
+                    center = (resource[0][0] + NEIGHBOR_RESOURCE_SIZE[0] / 2, resource[0][1] + NEIGHBOR_RESOURCE_SIZE[1] / 2)
+                    pg.draw.circle(screen, PLAY_HIGHLIGHT_COLOR, center, NEIGHBOR_RESOURCE_SIZE[0] / 2 + 3)
+                    resource_image = self.load_resource_image(resource=resource[1])
+                    resource_image = pg.transform.scale(resource_image, NEIGHBOR_RESOURCE_SIZE)
+                    screen.blit(resource_image, resource[0])
 
     # def load_resource_image(self, resource):
     #     return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
@@ -674,6 +728,43 @@ class AdjacentResourceView(View):
     def calc_location(self, screen_dimension):
         return ((0, screen_dimension[1] - WONDER_BOARD_SIZE[1]))
 
+    def is_event_inside_resource_map(self):
+        for item in self.resource_map_l:
+            if self.check_resource(item, "l", self.resource_map_l):
+                return True
+        for item in self.resource_map_r:
+            if self.check_resource(item, "r", self.resource_map_r):
+                return True
+            
+    def check_resource(self, item, side, resource_map):
+        for resource in item:
+            if pg.mouse.get_pos()[0] > resource[0][0] and \
+                pg.mouse.get_pos()[0] < resource[0][0] + NEIGHBOR_RESOURCE_SIZE[0] and \
+                pg.mouse.get_pos()[1] > resource[0][1] and \
+                pg.mouse.get_pos()[1] < resource[0][1] + NEIGHBOR_RESOURCE_SIZE[1]:
+                    if resource[2]:
+                        resource[2] = False
+                        self.controller.on_resource_selected(side, resource_map)
+                        return True
+                    else:
+                        r_true = False
+                        for r in item:
+                            if r[2]:
+                                r_true = True
+                        if ((self.game.current_player().money - self.game.current_player().spent_money_l - self.game.current_player().spent_money_r >= self.game.current_player().left_cost and side == "l") or \
+                            (self.game.current_player().money - self.game.current_player().spent_money_r - self.game.current_player().spent_money_l >= self.game.current_player().right_cost and side == "r")) or \
+                            (len(item) > 1 and r_true):
+                            for res in item:
+                                res[2] = False
+                            resource[2] = True
+                            self.controller.on_resource_selected(side, resource_map)
+                            return True
+
+    def handle_event(self, event):
+        if event.type == pg.MOUSEBUTTONUP:
+            if self.is_event_inside_resource_map():
+                return True
+        return False
 
 class MoneyView(View):
     def __init__(self, game, board, controller):
@@ -693,7 +784,7 @@ class MoneyView(View):
         screen.blit(money_image, self.location)
 
         money_font = pg.font.SysFont("timesnewroman", MONEY_FONT_SIZE)
-        money_text = money_font.render(str(self.game.current_player().money), True, (0, 0, 0))
+        money_text = money_font.render(str(self.game.current_player().money - self.game.current_player().spent_money_l - self.game.current_player().spent_money_r), True, (0, 0, 0))
         money_text_rect = money_text.get_rect(center = (self.location[0] + MONEY_IMAGE_SIZE[0]/2, self.location[1] + MONEY_IMAGE_SIZE[1]/2))
         screen.blit(money_text, money_text_rect)
 
