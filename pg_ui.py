@@ -23,6 +23,7 @@ i = 0
 hand = Game().hands[(i + Game().turn) % len(Game().hands)]
 
 screen_dimension = (1440, 1000)
+pg.display.set_caption("7 Wonders")
 
 DISCARD_BUTTON_SIZE = (100, 50)
 DISCARD_BUTTON_COLOR = (240, 20, 20)
@@ -32,6 +33,7 @@ DISCARD_FONT_SIZE = 20
 
 HAND_CARD_SIZE = (144, 250)
 
+
 card_highlighted = 1
 discard = False
 
@@ -39,12 +41,16 @@ class PgUi:
     def __init__(self):
         self.game = Game()
         self.board = Board()
-        self.controller = GameController(self.game, self.board)
-        self.init_views()
+        self.controller = GameController(self.game, self.board, "placeholder")
+        self.game_view = GameView(self.game, self.board, self.controller)
+        self.controller.view = self.game_view
+        self.game_view.controller = self.controller
         self.screen_dimension = (1440, 1000)
 
-    def init_views(self):
-        self.game_view = GameView(self.game, self.board, self.controller)
+        # self.init_views()
+
+    # def init_views(self):
+    #     self.game_view = GameView(self.game, self.board, self.controller)
 
     def play(self):
         global card_highlighted
