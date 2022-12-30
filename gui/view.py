@@ -28,7 +28,7 @@ RAW_RESOURCE_COLOR = (70, 35, 25)
 MANUFACTORED_RESOURCE_COLOR = (125,125,125)
 COMMERCIAL_COLOR = (200, 170, 20)
 CIVIC_COLOR = (0, 0, 200)
-GUILD_COLOR = (75,0,130)
+GUILD_COLOR = (75, 0, 130)
 WONDER_C_COLOR = (0, 0, 0)
 CARD_NAME_COLOR = (255, 255, 255)
 PLAY_HIGHLIGHT_COLOR = (255, 255, 0)
@@ -48,11 +48,17 @@ CARD_COLORS = {
     C.COMMERCIAL: COMMERCIAL_COLOR,
     C.CIVIC: CIVIC_COLOR,
     C.MFG_R: MANUFACTORED_RESOURCE_COLOR,
+    C.GUILD: GUILD_COLOR,
     C.WONDER_C: WONDER_C_COLOR,
+    C.WONDER_START: WONDER_C_COLOR
 }
 
 HAND_CARD_TEXT_MARGIN = 10
 HAND_CARD_NAME_FONT_SIZE = 15
+
+HAND_CARD_COUPON_MARGIN = [2, 10]
+HAND_CARD_COUPON_FONT_SIZE = 12
+COUPON_OFFSET = 3
 
 HAND_CARD_PROVIDES_MARGIN = (25, 4)
 
@@ -119,6 +125,16 @@ FILE_SLASH_SIZE = (8, 14)
 ALL_CARDS_SIZE = (144, 250)
 ALL_CARDS_SPACING = 10
 ALL_CARDS_MARGIN = (30, 30)
+
+# 176 by 225
+
+WAR_TOKENS_OFFSET = (20, 20)
+MINUS_TOKEN_SIZE = [40, 40]
+ONE_TOKEN_SIZE = [39, 50]
+THREE_TOKEN_SIZE = [47, 60]
+FIVE_TOKEN_SIZE = [55, 70]
+
+TOKEN_SPACING = 10
 
 BACK_ARROW_SIZE = (50, 50)
 
@@ -325,7 +341,7 @@ class SelfView(View):
         total_spacing = 0
         for card in either_or_list:
             if total_cards > 1:
-                total_spacing += 20
+                total_spacing += 10
             for i in range(len(card.provides_resources[0])):
                 resource_image = self.load_resource_image(resource=card.provides_resources[0][i])
                 resource_image = pg.transform.smoothscale(resource_image, FILE_PROVIDES_IMAGE_SIZE)
@@ -390,7 +406,7 @@ class SelfView(View):
         total_spacing = 0
         for card in either_or_list:
             if total_cards > 1:
-                total_spacing += 20
+                total_spacing += 10
             for i in range(len(card.provides_resources[0])):
                 resource_image = self.load_resource_image(resource=card.provides_resources[0][i])
                 resource_image = pg.transform.smoothscale(resource_image, FILE_PROVIDES_IMAGE_SIZE)
@@ -514,15 +530,37 @@ class SelfView(View):
         pg.draw.rect(screen, bland_commerical_color, ((self.location[0], self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 5)), (WONDER_BOARD_SIZE[0], SELF_FILE_HEIGHT)))
 
         total_cards = 0
+        commercial_cards = []
         for i in range(len(player.cards)):
             card = player.cards[i]
             if card.card_type == C.COMMERCIAL:
                 total_cards += 1
+                commercial_cards.append(card)
 
         total_font = pg.font.SysFont("timesnewroman", SELF_FILE_FONT_SIZE)
         total_font = total_font.render((str(total_cards)), True, (0, 0, 0))
         total_font_3_rect = total_font.get_rect(center = (self.location[0] + 40, self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 6) - (SELF_FILE_HEIGHT / 2)))
         screen.blit(total_font, total_font_3_rect)
+
+        total_spacing = 0
+        drawn_cards = 0
+        for card in commercial_cards:
+            if drawn_cards > 1:
+                total_spacing += 10
+            if len(card.provides_resources) > 0:
+                for k in range(len(card.provides_resources[0])):
+                    drawn_cards += 1
+                    resource_image = self.load_resource_image(resource=card.provides_resources[0][k])
+                    resource_image = pg.transform.smoothscale(resource_image, FILE_PROVIDES_IMAGE_SIZE)
+                    resource_image_pos = (self.location[0] + 84 + total_spacing, self.location[1] - (NUM_FILES - 5) * SELF_FILE_HEIGHT)
+                    screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
+                    total_spacing += (FILE_PROVIDES_IMAGE_SIZE[0] + 4)
+                    if k != len(card.provides_resources[0]) - 1:
+                        slash = pg.image.load('Images/slash.png')
+                        slash = pg.transform.smoothscale(slash, FILE_SLASH_SIZE)
+                        slash_pos = (self.location[0] + 85 + total_spacing, self.location[1] - (NUM_FILES - 5) * SELF_FILE_HEIGHT)
+                        screen.blit(slash, (slash_pos[0], slash_pos[1]))
+                        total_spacing += (FILE_SLASH_SIZE[0] + 2)
 
     def draw_guilds(self, player):
         bland_guild_color = self.bland(GUILD_COLOR)
@@ -645,9 +683,7 @@ class AdjacentResourceView(View):
         else:
             screen.blit(raw_cost_image, second_location)
 
-
     def draw_resources(self, player, margin):
-        current_player = self.game.current_player()
         map_list = []
         total_stone = 0
         total_ore = 0
@@ -658,7 +694,7 @@ class AdjacentResourceView(View):
         total_silk = 0
         either_or_list = []
         for i, card in enumerate(player.cards):
-            if card.card_type == C.RAW_R or card.card_type == C.MFG_R:
+            if card.card_type == C.RAW_R or card.card_type == C.MFG_R or card.card_type == C.WONDER_START:
                 for resource in player.cards[i].provides_resources:
                     if resource == (R.STONE,):
                         total_stone += 1
@@ -740,7 +776,7 @@ class AdjacentResourceView(View):
             if i % 2 == 0:
                 tuple_spacing += NEIGHBOR_RESOURCE_SIZE[1] + 4
                 last_pos = margin
-            for t, resource_tuple in enumerate(card.provides_resources):
+            for resource_tuple in card.provides_resources:
                 slash_margin = 0
                 location_list = []
                 for r, resource in enumerate(resource_tuple):
@@ -750,7 +786,7 @@ class AdjacentResourceView(View):
                     resource_location = [self.location[0] + resource_margin + slash_margin + last_pos, self.location[1] + height_spacing + tuple_spacing]
                     screen.blit(resource_image, resource_location)
                     location_list.append([resource_location, card.provides_resources[0][r], False])
-                    # use resource location to find left/right
+
                     if r != len(card.provides_resources[0]) - 1:
                         slash = pg.image.load('Images/slash.png')
                         slash = pg.transform.smoothscale(slash, NEIGHBOR_SLASH_SIZE)
@@ -760,38 +796,47 @@ class AdjacentResourceView(View):
                 last_pos = resource_location[0] + NEIGHBOR_RESOURCE_SIZE[0] + 10
                 map_list.append(location_list)
 
+        current_player = self.game.current_player()
+        
         if margin > 100:
             # if current_player.spent_money_r == 0 and current_player.spent_money_l == 0:
             #     self.resource_map_r = map_list
             #     print("reset 1")
             if len(map_list) != len(self.resource_map_r):
                     self.resource_map_r = map_list
-                    print("reset 2")
+                    # print("reset 2")
+                    self.controller.reset_side("l", current_player)
+                    
             else:
                 for r, resource_tuple in enumerate(map_list):
                     for i in range(len(resource_tuple)):
                         if resource_tuple[i][0] != self.resource_map_r[r][i][0]:
                             self.resource_map_r = map_list
-                            print("reset 3")
+                            # print("reset 3")
+                            self.controller.reset_side("l", current_player)
                         elif resource_tuple[i][1] != self.resource_map_r[r][i][1]:
                             self.resource_map_r = map_list
-                            print("reset 4")
+                            # print("reset 4")
+                            self.controller.reset_side("l", current_player)
         else:
             # if current_player.spent_money_l == 0 and current_player.spent_money_r == 0:
             #     self.resource_map_l = map_list
             #     print("reset 5")
             if len(map_list) != len(self.resource_map_l):
                     self.resource_map_l = map_list
-                    print("reset 6")
+                    # print("reset 6")
+                    self.controller.reset_side("r", current_player)
             else:
                 for r, resource_tuple in enumerate(map_list):
                     for i in range(len(resource_tuple)):
                         if resource_tuple[i][0] != self.resource_map_l[r][i][0]:
                             self.resource_map_l = map_list
-                            print("reset 7")
+                            # print("reset 7")
+                            self.controller.reset_side("r", current_player)
                         elif resource_tuple[i][1] != self.resource_map_l[r][i][1]:
                             self.resource_map_l = map_list
-                            print("reset 8")
+                            # print("reset 8")
+                            self.controller.reset_side("r", current_player)
 
     def draw_left_right_highlight(self):
         self.draw_image_highlights(self.resource_map_l)
@@ -827,8 +872,9 @@ class AdjacentResourceView(View):
                 pg.mouse.get_pos()[1] < resource[0][1] + NEIGHBOR_RESOURCE_SIZE[1]:
                     if resource[2]:
                         resource[2] = False
-                        print("setting", resource, "to false")
+                        # print("setting", resource, "to false")
                         self.controller.on_resource_selected(side, resource_map, resource)
+                        self.controller.reset_side(side, current_player)
                         return True
                     else:
                         r_true = False
@@ -845,7 +891,7 @@ class AdjacentResourceView(View):
                             (len(item) > 1 and r_true):
                             for res in item:
                                 res[2] = False
-                                print("setting", res, "to false")
+                                # print("setting", res, "to false")
                             resource[2] = True
                             self.controller.on_resource_selected(side, resource_map, resource)
                             return True
@@ -984,15 +1030,16 @@ class PlayerView(View):
         screen.blit(civic, (civic_pos[0], civic_pos[1]))
 
     def draw_civic_text(self, player):
-        total_civic_points = 0
-        for card in player.cards:
-            total_civic_points += card.points
+        # not actually civic anymore, but rather total current score
+        # total_civic_points = 0
+        # for card in player.cards:
+        #     total_civic_points += card.points
         civic_size = (int(self.size[0] / 5), int(self.size[0] / 5))
         civic_pos = (self.location[0] + self.size[0] / 2, self.location[1] + self.size[1] / 2 - civic_size[1] / 2)
 
         num_civics_font_size = int(civic_size[0] / 2)
         num_civics_font = pg.font.SysFont('georgia', num_civics_font_size)
-        num_civics_text = num_civics_font.render(str(total_civic_points), True, (30, 30, 30))
+        num_civics_text = num_civics_font.render(str(player.current_score), True, (30, 30, 30))
         num_civics_text_rect = num_civics_text.get_rect(center = (civic_pos[0], civic_pos[1] + civic_size[1] + self.size[1] / 15))
         screen.blit(num_civics_text, num_civics_text_rect)
 
@@ -1105,6 +1152,7 @@ class CardView(View):
             self.draw_highlight(card)
         self.draw_hand_card_background(card, self.location)
         self.draw_hand_card_name(card.name, self.location)
+        self.draw_coupons(card.provides_coupons, self.location)
         self.draw_hand_card_provides(card, self.location)
         self.draw_hand_card_cost(card, self.location)
         if not self.board.discard:
@@ -1130,6 +1178,15 @@ class CardView(View):
         hand_card_name_text_length = hand_card_name_text.get_size()
         hand_card_name_location = (location[0] + HAND_CARD_TEXT_MARGIN, location[1] + HAND_CARD_SIZE[1] - HAND_CARD_TEXT_MARGIN - hand_card_name_text_length[1])
         screen.blit(hand_card_name_text, (hand_card_name_location[0], hand_card_name_location[1]))
+
+    def draw_coupons(self, coupons, location):
+        for i, coupon in enumerate(coupons):
+            hand_card_coupon_font = pg.font.SysFont('georgia', HAND_CARD_COUPON_FONT_SIZE)
+            hand_card_coupon_text = hand_card_coupon_font.render(coupon, True, (255, 255, 255))
+            hand_card_coupon_text = pg.transform.rotate(hand_card_coupon_text, 90)
+            hand_card_coupon_text_length = hand_card_coupon_text.get_size()
+            hand_card_coupon_location = (location[0] + HAND_CARD_SIZE[0] - COUPON_OFFSET - HAND_CARD_COUPON_MARGIN[0] * i - hand_card_coupon_text_length[0] * (i + 1), location[1] + HAND_CARD_SIZE[1] - HAND_CARD_COUPON_MARGIN[1] - hand_card_coupon_text_length[1])
+            screen.blit(hand_card_coupon_text, hand_card_coupon_location)
 
     def draw_hand_card_provides(self, card, location):
         if len(card.cost) == 0 and card.money_cost == 0:
@@ -1199,7 +1256,7 @@ class CardView(View):
 
         if card.icon:
             image = pg.transform.smoothscale(card.icon.image, card.icon.size)
-            image_pos = (location[0] + hand_resource_margin + HAND_CARD_SIZE[0] // 2 - card.icon.size[0] // 2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+            image_pos = (location[0] + hand_resource_margin * 0.5 + HAND_CARD_SIZE[0] // 2 - card.icon.size[0] // 2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
             screen.blit(image, image_pos)
 
     def draw_hand_card_cost(self, card, location):
@@ -1374,11 +1431,13 @@ class AllCardsView(View):
         self.num_per_row = 3
         self.background_size = (400, 400)
         self.player_index = self.game.current_player_index
+        self.bottom_right = []
 
     def layout(self, screen_dimension):
         self.background_size = (screen_dimension[0], screen_dimension[1])
         self.num_per_row = self.calc_num_per_row(screen_dimension)
         self.back_button_location = (screen_dimension[0] - 80, 30)
+        self.bottom_right = [screen_dimension[0], screen_dimension[1]]
 
     def calc_num_per_row(self, screen_dimension):
         if len(self.game.players[self.player_index].cards) == 0:
@@ -1388,7 +1447,7 @@ class AllCardsView(View):
 
     def draw(self):
         if self.board.all_cards:
-            order_list = [C.WONDER_C, C.RAW_R, C.MFG_R, C.COMMERCIAL, C.MILITARY, C.CIVIC, C.SCIENCE]
+            order_list = [C.WONDER_START, C.WONDER_C, C.RAW_R, C.MFG_R, C.COMMERCIAL, C.MILITARY, C.CIVIC, C.SCIENCE, C.GUILD]
             num_drawn = -1
             pg.draw.rect(screen, (BACKRGOUND_COLOR), (self.location, self.background_size))
             for current_card_type in order_list:
@@ -1406,10 +1465,54 @@ class AllCardsView(View):
 
                         CardView.draw_hand_card_background(self, card, card_location)
                         CardView.draw_hand_card_name(self, card.name, card_location)
+                        CardView.draw_coupons(self, card.provides_coupons, card_location)
                         CardView.draw_hand_card_provides(self, card, card_location)
                         CardView.draw_hand_card_cost(self, card, card_location)
-
+                        
+                        
+            self.draw_war_tokens()
             self.draw_button()
+
+    def draw_war_tokens(self):
+        minus_token = pg.image.load("Images/minus_token.png")
+        one_token = pg.image.load("Images/one_token.png")
+        three_token = pg.image.load("Images/three_token.png")
+        five_token = pg.image.load("Images/five_token.png")
+
+        minus_token = pg.transform.smoothscale(minus_token, MINUS_TOKEN_SIZE)
+        one_token = pg.transform.smoothscale(one_token, ONE_TOKEN_SIZE)
+        three_token = pg.transform.smoothscale(three_token, THREE_TOKEN_SIZE)
+        five_token = pg.transform.smoothscale(five_token, FIVE_TOKEN_SIZE)
+
+        player = self.game.players[self.player_index]
+
+        minus_total = 0
+        one_total = 0
+        three_total = 0
+        five_total = 0
+
+        total_distance = minus_total * MINUS_TOKEN_SIZE[0] + one_total * ONE_TOKEN_SIZE[0] + three_total * THREE_TOKEN_SIZE[0] + five_total * FIVE_TOKEN_SIZE[0]
+
+        start_location = [self.bottom_right[0] - WAR_TOKENS_OFFSET[0] - total_distance, self.bottom_right[1] - WAR_TOKENS_OFFSET[1]]
+
+        for token in player.war_tokens:
+            if token == -1:
+                minus_total += 1
+            elif token == 1:
+                one_total += 1
+            elif token == 3:
+                three_total += 1
+            elif token == 5:
+                five_total += 1
+
+        for i in range(minus_total):
+            screen.blit(minus_token, (start_location[0] - (i + 1) * MINUS_TOKEN_SIZE[0] - TOKEN_SPACING * (i+1), start_location[1] - MINUS_TOKEN_SIZE[1]))
+        for i in range(one_total):
+            screen.blit(one_token, (start_location[0] - minus_total * MINUS_TOKEN_SIZE[0] - (i + 1) * ONE_TOKEN_SIZE[0] - TOKEN_SPACING * (minus_total + i + 1), start_location[1] - ONE_TOKEN_SIZE[1]))
+        for i in range(three_total):
+            screen.blit(three_token, (start_location[0] - minus_total * MINUS_TOKEN_SIZE[0] - one_total * ONE_TOKEN_SIZE[0] - (i + 1) * THREE_TOKEN_SIZE[0] - TOKEN_SPACING * (minus_total + one_total + i + 1), start_location[1] - THREE_TOKEN_SIZE[1]))
+        for i in range(five_total):
+            screen.blit(five_token, (start_location[0] - minus_total * MINUS_TOKEN_SIZE[0] - one_total * ONE_TOKEN_SIZE[0] - three_total * THREE_TOKEN_SIZE[0] - (i + 1) * FIVE_TOKEN_SIZE[0] - TOKEN_SPACING * (minus_total + one_total + three_total + i + 1), start_location[1] - FIVE_TOKEN_SIZE[1])) 
 
     def draw_button(self):
         arrow_image = pg.image.load('Images/back_arrow.png')
