@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from game import *
+# from game import *
 # from cmd_ui import *
 from pg_ui import *
+from ai import *
 
 if __name__ == "__main__":
+    aI = Ai(0)
+    aI.evaluate()
     PgUi().play()
     # CmdUi().play()

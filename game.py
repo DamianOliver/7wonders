@@ -65,22 +65,27 @@ class S(Enum):
 
 class Game:
     def __init__(self):
+        print("initiallizing game")
         self.turn = 0
         self.current_player_index = 0
-        self.age = 1
-
-        wonder_list = self.assign_wonders()
+        self.age = 1    
         self.players = []
         
         for i in range(NUM_PLAYERS):
-            self.players.append(Player(i, wonder_list[i]))
-            self.players[i].play_card(wonder_list[i].layers_list[0])
+            self.players.append(Player(i))
+
+        self.assign_wonders(self.create_wonder_list())
+        for player in self.players:
+            player.play_card(player.wonder.layers_list[0])
 
         self.hands = []
         self.deck = self.create_deck()
         self.hands = self.create_hands(self.deck)
 
     def current_player_finished(self):
+        # there is a PURELY GRAPHICAL glitch where a highlighted bought resource remains highlighted after the first card has been bought when playing the last two cards. maybe fix that some day
+        if len(self.current_player_hand()) == 1 and self.current_player().play_last_card:
+            return
         self.current_player_index += 1
         if self.current_player_index >= len(self.players):
             self.turn += 1
@@ -112,8 +117,8 @@ class Game:
             player.print_cards()
 
     def score_player(self, player):
-        print()
-        print("calculating score")
+        # print()
+        # print("calculating score")
         total_score = 0
         available_science = []
         science_tuples = []
@@ -126,15 +131,15 @@ class Game:
                 icon_points += card.icon.score(player, self.players)
 
             if card.provides_sciences:
-                if len(card.provides_sciences) == 1:
+                if len(card.provides_sciences[0]) == 1:
                     available_science.append(card.provides_sciences[0])
                 else:
                     science_tuples.append(card.provides_sciences[0])
 
         total_score += civic_points + icon_points
 
-        print("civic gave", civic_points)
-        print("icons gave", icon_points)
+        # print("civic gave", civic_points)
+        # print("icons gave", icon_points)
 
         war_points = 0
         for token in player.war_tokens:
@@ -142,27 +147,29 @@ class Game:
 
         total_score += war_points
 
-        print("war gave", war_points)
+        # print("war gave", war_points)
 
         total_score += player.money // 3
 
-        print("money gave", player.money // 3)
+        # print("money gave", player.money // 3)
 
         totals_list = [0, 0, 0]
         for science in available_science:
-            if science == S.COG:
+            if science[0] == S.COG:
                 totals_list[0] += 1
-            elif science == S.COMPASS:
+            elif science[0] == S.COMPASS:
                 totals_list[1] += 1
-            else:
+            elif science[0] == S.TABLET:
                 totals_list[2] += 1
+            else:
+                print("Error: unknown science symbol - could not calculate total")
 
         science_points = self.science_minimax(totals_list, science_tuples)
         total_score += science_points
 
-        print("science gave", science_points)
+        # print("science gave", science_points)
 
-        print("total:", total_score)
+        # print("total:", total_score)
 
         return total_score
 
@@ -173,13 +180,15 @@ class Game:
         else:
             best_option = None
             best_points = -1
-            for option in science_tuples:
+            for option in science_tuples[0]:
                 if option == S.COG:
                     new_index = 0
                 elif option == S.COMPASS:
                     new_index = 1
-                else:
+                elif option == S.TABLET:
                     new_index = 2
+                else:
+                    print("Error: unknown science symbol - could not find index")
     
                 totals_list[new_index] += 1
                 new_points = self.science_minimax(totals_list, science_tuples[1:])
@@ -189,6 +198,7 @@ class Game:
                     best_points = new_points
                     best_option = option
 
+            # print("using", best_option, "-", best_points)
             return best_points
 
 
@@ -199,6 +209,9 @@ class Game:
 
         total_points += min(totals_list) * 7
 
+        # print("[Cog, Compass, Tablet]")
+        # print("total of", total_points, "with", totals_list)
+
         return total_points
 
 
@@ -208,8 +221,8 @@ class Game:
                 Card("BATHS", C.CIVIC, points = 3, provides_coupons = ["AQUEDUCT"], cost = [R.STONE], num_players = 3),
                 Card("GLASSWORKS", C.MFG_R, provides_resources = [(R.GLASS,)], num_players = 3),
                 Card("CLAY PIT", C.RAW_R, provides_resources = [(R.BRICK, R.ORE)], money_cost = 1, num_players = 3),
-                Card("APOTHECARY", C.SCIENCE, provides_sciences = [S.COMPASS], provides_coupons = ["STABLES", "DISPENSARY"], cost = [R.SILK], num_players = 3),
-                Card("SCRIPTORIUM", C.SCIENCE, provides_sciences = [S.TABLET], cost = [R.PAPYRUS], num_players = 3),
+                Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [R.SILK], num_players = 3),
+                Card("SCRIPTORIUM", C.SCIENCE, provides_sciences = [(S.TABLET,)], provides_coupons = ["COURTHOUSE", "LIBRARY"], cost = [R.PAPYRUS], num_players = 3),
                 Card("CLAY POOL", C.RAW_R, provides_resources = [(R.BRICK,)], num_players = 3),
                 Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 3),
                 Card("ORE VEIN", C.RAW_R, provides_resources = [(R.ORE,)], num_players = 3),
@@ -220,7 +233,7 @@ class Game:
                 Card("PRESS", C.MFG_R, provides_resources = [(R.PAPYRUS,)], num_players = 3),
                 Card("STOCKADE", C.MILITARY, num_shields = 1, cost = [R.WOOD], num_players = 3),
                 Card("BARRACKS", C.MILITARY, num_shields = 1, cost = [R.ORE], num_players = 3),
-                Card("WORKSHOP", C.SCIENCE, provides_sciences = [S.COG], provides_coupons = ["ARCHERY RANGE", "LABORATORY"], cost = [R.GLASS], num_players = 3),
+                Card("WORKSHOP", C.SCIENCE, provides_sciences = [(S.COG,)], provides_coupons = ["ARCHERY RANGE", "LABORATORY"], cost = [R.GLASS], num_players = 3),
                 Card("LOOM", C.MFG_R, provides_resources = [(R.SILK,)], num_players = 3),
                 Card("STONE PIT", C.RAW_R, provides_resources = [(R.STONE,)], num_players = 3),
                 Card("MARKETPLACE", C.COMMERCIAL, icon = ManufactoredDiscount(), provides_coupons = ["CARAVANSERY"], num_players = 3),
@@ -240,7 +253,7 @@ class Game:
                 Card("TAVERN", C.COMMERCIAL, provides_money = 5, num_players = 5),
                 Card("CLAY POOL", C.RAW_R, provides_resources = [(R.BRICK,)], num_players = 5),
                 Card("ALTAR", C.CIVIC, points = 2, provides_coupons = ["TEMPLE"], num_players = 5),
-                Card("APOTHECARY", C.SCIENCE, provides_sciences = [S.COMPASS], provides_coupons = ["STABLES", "DISPENSARY"], cost = [R.SILK], num_players = 5),
+                Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [R.SILK], num_players = 5),
                 Card("FOREST CAVE", C.RAW_R, provides_resources = [(R.WOOD, R.ORE)], money_cost = 1, num_players = 5),
 
                 Card("MARKETPLACE", C.COMMERCIAL, icon = ManufactoredDiscount(), provides_coupons = ["CARAVANSERY"], num_players = 6),
@@ -253,7 +266,7 @@ class Game:
 
                 Card("EAST TRADING POST", C.COMMERCIAL, icon = RightRawDiscount(), provides_coupons = ["FORUM"], num_players = 7),
                 Card("PAWNSHOP", C.CIVIC, points = 3, num_players = 7),
-                Card("WORKSHOP", C.SCIENCE, provides_sciences = [S.COG], provides_coupons = ["ARCHERY RANGE", "LABORATORY"], cost = [R.GLASS], num_players = 7),
+                Card("WORKSHOP", C.SCIENCE, provides_sciences = [(S.COG,)], provides_coupons = ["ARCHERY RANGE", "LABORATORY"], cost = [R.GLASS], num_players = 7),
                 Card("TAVERN", C.COMMERCIAL, provides_money = 5, num_players = 7),
                 Card("WEST TRADING POST", C.COMMERCIAL, icon = LeftRawDiscount(), provides_coupons = ["FORUM"], num_players = 7),
                 Card("BATHS", C.CIVIC, points = 3, provides_coupons = ["AQUEDUCT"], cost = [R.STONE], num_players = 7),  
@@ -279,10 +292,10 @@ class Game:
                 Card("STABLES", C.MILITARY, num_shields = 2, cost = [R.BRICK, R.WOOD, R.ORE], num_players = 3),
                 Card("ARCHERY RANGE", C.MILITARY, num_shields = 2, cost = [R.WOOD, R.WOOD, R.ORE], num_players = 3),
                 Card("WALLS", C.MILITARY, num_shields = 2, cost = [R.STONE, R.STONE, R.STONE], num_players = 3),
-                Card("LIBRARY", C.SCIENCE, provides_sciences = [S.TABLET], provides_coupons = ["SENATE", "UNIVERSITY"], cost = [R.STONE, R.STONE, R.SILK], num_players = 3),
-                Card("LABORATORY", C.SCIENCE, provides_sciences = [S.COG], provides_coupons = ["SIEGE WORKSHOP", "OBSERVATORY"], cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 3),
-                Card("DISPENSARY", C.SCIENCE, provides_sciences = [S.COMPASS], provides_coupons = ["ARENA", "LODGE"], cost = [R.ORE, R.ORE, R.GLASS], num_players = 3),
-                Card("SCHOOL", C.SCIENCE, provides_sciences = [S.TABLET], provides_coupons = ["ACADEMY", "STUDY"], cost = [R.WOOD, R.PAPYRUS], num_players = 3),
+                Card("LIBRARY", C.SCIENCE, provides_sciences = [(S.TABLET,)], provides_coupons = ["SENATE", "UNIVERSITY"], cost = [R.STONE, R.STONE, R.SILK], num_players = 3),
+                Card("LABORATORY", C.SCIENCE, provides_sciences = [(S.COG,)], provides_coupons = ["SIEGE WORKSHOP", "OBSERVATORY"], cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 3),
+                Card("DISPENSARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["ARENA", "LODGE"], cost = [R.ORE, R.ORE, R.GLASS], num_players = 3),
+                Card("SCHOOL", C.SCIENCE, provides_sciences = [(S.TABLET,)], provides_coupons = ["ACADEMY", "STUDY"], cost = [R.WOOD, R.PAPYRUS], num_players = 3),
 
                 Card("FOUNDRY", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,)], money_cost = 1, num_players = 4),
                 Card("SAWMILL", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,)], money_cost = 1, num_players = 4),
@@ -290,7 +303,7 @@ class Game:
                 Card("QUARRY", C.RAW_R, provides_resources = [(R.STONE,), (R.STONE,)], money_cost = 1, num_players = 4),
                 Card("BAZAR", C.COMMERCIAL, icon = TwoGoldForMfc(), num_players = 4),
                 Card("TRAINING GROUND", C.MILITARY, num_shields = 2, cost = [R.ORE, R.ORE, R.WOOD], num_players = 4),
-                Card("DISPENSARY", C.SCIENCE, provides_sciences = [S.COMPASS], provides_coupons = ["ARENA", "LODGE"], cost = [R.ORE, R.ORE, R.GLASS], num_players = 4),
+                Card("DISPENSARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["ARENA", "LODGE"], cost = [R.ORE, R.ORE, R.GLASS], num_players = 4),
 
                 Card("GLASSWORKS", C.MFG_R, provides_resources = [(R.GLASS,)], num_players = 5),
                 Card("PRESS", C.MFG_R, provides_resources = [(R.PAPYRUS,)], num_players = 5),
@@ -298,7 +311,7 @@ class Game:
                 Card("CARAVANSERY", C.COMMERCIAL, provides_resources = [(R.WOOD, R.STONE, R.ORE, R.BRICK)], provides_coupons = ["LIGHT HOUSE"], cost = [R.WOOD, R.WOOD], num_players = 4),
                 Card("COURTHOUSE", C.CIVIC, points = 4, cost = [R.BRICK, R.BRICK, R.SILK], num_players = 5),
                 Card("STABLES", C.MILITARY, num_shields = 2, cost = [R.BRICK, R.WOOD, R.ORE], num_players = 5),
-                Card("LABORATORY", C.SCIENCE, provides_sciences = [S.COG], provides_coupons = ["SIEGE WORKSHOP", "OBSERVATORY"], cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 5),
+                Card("LABORATORY", C.SCIENCE, provides_sciences = [(S.COG,)], provides_coupons = ["SIEGE WORKSHOP", "OBSERVATORY"], cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 5),
 
                 Card("CARAVANSERY", C.COMMERCIAL, provides_resources = [(R.WOOD, R.STONE, R.ORE, R.BRICK)], provides_coupons = ["LIGHT HOUSE"], cost = [R.WOOD, R.WOOD], num_players = 6),
                 Card("FORUM", C.COMMERCIAL, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], provides_coupons = ["HAVEN"], cost = [R.BRICK, R.BRICK], num_players = 6),
@@ -306,7 +319,7 @@ class Game:
                 Card("TEMPLE", C.CIVIC, points = 3, cost = [R.WOOD, R.BRICK, R.GLASS], provides_coupons = ["PANTHEON"], num_players = 6),
                 Card("TRAINING GROUND", C.MILITARY, num_shields = 2, cost = [R.ORE, R.ORE, R.WOOD], num_players = 6),
                 Card("ARCHERY RANGE", C.MILITARY, num_shields = 2, cost = [R.WOOD, R.WOOD, R.ORE], num_players = 6),
-                Card("LIBRARY", C.SCIENCE, provides_sciences = [S.TABLET], provides_coupons = ["SENATE", "UNIVERSITY"], cost = [R.STONE, R.STONE, R.SILK], num_players = 6),
+                Card("LIBRARY", C.SCIENCE, provides_sciences = [(S.TABLET,)], provides_coupons = ["SENATE", "UNIVERSITY"], cost = [R.STONE, R.STONE, R.SILK], num_players = 6),
 
                 Card("FORUM", C.COMMERCIAL, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], provides_coupons = ["HAVEN"], cost = [R.BRICK, R.BRICK], num_players = 7),
                 Card("BAZAR", C.COMMERCIAL, icon = TwoGoldForMfc(), num_players = 7),
@@ -314,7 +327,7 @@ class Game:
                 Card("AQUEDUCT", C.CIVIC, points = 5, cost = [R.STONE, R.STONE, R.STONE], num_players = 7),
                 Card("TRAINING GROUND", C.MILITARY, num_shields = 2, cost = [R.ORE, R.ORE, R.WOOD], num_players = 7),
                 Card("WALLS", C.MILITARY, num_shields = 2, cost = [R.STONE, R.STONE, R.STONE], num_players = 7),
-                Card("SCHOOL", C.SCIENCE, provides_sciences = [S.TABLET], provides_coupons = ["ACADEMY", "STUDY"], cost = [R.WOOD, R.PAPYRUS], num_players = 7)
+                Card("SCHOOL", C.SCIENCE, provides_sciences = [(S.TABLET,)], provides_coupons = ["ACADEMY", "STUDY"], cost = [R.WOOD, R.PAPYRUS], num_players = 7)
                 ]
 
         elif self.age == 3:
@@ -330,39 +343,39 @@ class Game:
                 Card("ARSENAL", C.MILITARY, num_shields = 3, cost = [R.WOOD, R.WOOD, R.ORE, R.SILK], num_players = 3),
                 Card("SIEGE WORKSHOP", C.MILITARY, num_shields = 3, cost = [R.BRICK, R.BRICK, R.BRICK, R.WOOD], num_players = 3),
                 Card("FORTIFICATIONS", C.MILITARY, num_shields = 3, cost = [R.ORE, R.ORE, R.ORE, R.STONE], num_players = 3),
-                Card("UNIVERSITY", C.SCIENCE, provides_sciences = [S.TABLET], cost = [R.WOOD, R.WOOD, R.PAPYRUS, R.GLASS], num_players = 3),
-                Card("LODGE", C.SCIENCE, provides_sciences = [S.COMPASS], cost = [R.BRICK, R.BRICK, R.PAPYRUS, R.SILK], num_players = 3),
-                Card("ACADEMY", C.SCIENCE, provides_sciences = [S.COMPASS], cost = [R.STONE, R.STONE, R.STONE, R.GLASS], num_players = 3),
-                Card("OBSERVATORY", C.SCIENCE, provides_sciences = [S.COG], cost = [R.ORE, R.ORE, R.GLASS, R.SILK], num_players = 3),
-                Card("STUDY", C.SCIENCE, provides_sciences = [S.COG], cost = [R.WOOD, R.PAPYRUS, R.SILK], num_players = 3),
+                Card("UNIVERSITY", C.SCIENCE, provides_sciences = [(S.TABLET,)], cost = [R.WOOD, R.WOOD, R.PAPYRUS, R.GLASS], num_players = 3),
+                Card("LODGE", C.SCIENCE, provides_sciences = [(S.COMPASS,)], cost = [R.BRICK, R.BRICK, R.PAPYRUS, R.SILK], num_players = 3),
+                Card("ACADEMY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], cost = [R.STONE, R.STONE, R.STONE, R.GLASS], num_players = 3),
+                Card("OBSERVATORY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.ORE, R.ORE, R.GLASS, R.SILK], num_players = 3),
+                Card("STUDY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.WOOD, R.PAPYRUS, R.SILK], num_players = 3),
                 
                 Card("HAVEN", C.COMMERCIAL, icon = OneGoldPointForRaw(), cost = [R.WOOD, R.ORE, R.SILK], num_players = 4),
                 Card("COMMERCE CHAMBER", C.COMMERCIAL, icon = TwoPointForMfc(), cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 4),
                 Card("GARDENS", C.CIVIC, points = 5, cost = [R.BRICK, R.BRICK, R.WOOD], num_players = 4),
                 Card("ARSENAL", C.MILITARY, num_shields = 3, cost = [R.WOOD, R.WOOD, R.ORE, R.SILK], num_players = 4),
                 Card("CIRCUS", C.MILITARY, num_shields = 3, cost = [R.STONE, R.STONE, R.STONE, R.ORE], num_players = 4),
-                Card("UNIVERSITY", C.SCIENCE, provides_sciences = [S.TABLET], cost = [R.WOOD, R.WOOD, R.PAPYRUS, R.GLASS], num_players = 4),
+                Card("UNIVERSITY", C.SCIENCE, provides_sciences = [(S.TABLET,)], cost = [R.WOOD, R.WOOD, R.PAPYRUS, R.GLASS], num_players = 4),
 
                 Card("ARENA", C.COMMERCIAL, icon = ThreeGoldPointForWonder(), cost = [R.STONE, R.STONE, R.ORE], num_players = 5),
                 Card("SENATE", C.CIVIC, points = 6, cost = [R.WOOD, R.WOOD, R.STONE, R.ORE], num_players = 5),
                 Card("TOWN HALL", C.CIVIC, points = 6, cost = [R.STONE, R.STONE, R.ORE, R.GLASS], num_players = 5),
                 Card("SIEGE WORKSHOP", C.MILITARY, num_shields = 3, cost = [R.BRICK, R.BRICK, R.BRICK, R.WOOD], num_players = 5),
                 Card("CIRCUS", C.MILITARY, num_shields = 3, cost = [R.STONE, R.STONE, R.STONE, R.ORE], num_players = 5),
-                Card("STUDY", C.SCIENCE, provides_sciences = [S.COG], cost = [R.WOOD, R.PAPYRUS, R.SILK], num_players = 5),
+                Card("STUDY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.WOOD, R.PAPYRUS, R.SILK], num_players = 5),
 
                 Card("COMMERCE CHAMBER", C.COMMERCIAL, icon = TwoPointForMfc(), cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 6),
                 Card("LIGHTHOUSE", C.COMMERCIAL, icon = OneGoldPointForCommercial(), cost = [R.STONE, R.GLASS], num_players = 6),
                 Card("TOWN HALL", C.CIVIC, points = 6, cost = [R.STONE, R.STONE, R.ORE, R.GLASS], num_players = 6),
                 Card("PANTHEON", C.CIVIC, points = 7, cost = [R.BRICK, R.BRICK, R.ORE, R.GLASS, R.PAPYRUS, R.SILK], num_players = 6),
                 Card("CIRCUS", C.MILITARY, num_shields = 3, cost = [R.STONE, R.STONE, R.STONE, R.ORE], num_players = 6),
-                Card("LODGE", C.SCIENCE, provides_sciences = [S.COMPASS], cost = [R.BRICK, R.BRICK, R.PAPYRUS, R.SILK], num_players = 6),
+                Card("LODGE", C.SCIENCE, provides_sciences = [(S.COMPASS,)], cost = [R.BRICK, R.BRICK, R.PAPYRUS, R.SILK], num_players = 6),
 
                 Card("ARENA", C.COMMERCIAL, icon = ThreeGoldPointForWonder(), cost = [R.STONE, R.STONE, R.ORE], num_players = 7),
                 Card("PALACE", C.CIVIC, points = 8, cost = [R.STONE, R.ORE, R.WOOD, R.BRICK, R.GLASS, R.PAPYRUS, R.SILK], num_players = 7),
                 Card("FORTIFICATIONS", C.MILITARY, num_shields = 3, cost = [R.ORE, R.ORE, R.ORE, R.STONE], num_players = 7),
                 Card("ARSENAL", C.MILITARY, num_shields = 3, cost = [R.WOOD, R.WOOD, R.ORE, R.SILK], num_players = 7),
-                Card("ACADEMY", C.SCIENCE, provides_sciences = [S.COMPASS], cost = [R.STONE, R.STONE, R.STONE, R.GLASS], num_players = 7),
-                Card("OBSERVATORY", C.SCIENCE, provides_sciences = [S.COG], cost = [R.ORE, R.ORE, R.GLASS, R.SILK], num_players = 7),
+                Card("ACADEMY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], cost = [R.STONE, R.STONE, R.STONE, R.GLASS], num_players = 7),
+                Card("OBSERVATORY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.ORE, R.ORE, R.GLASS, R.SILK], num_players = 7),
             ]
 
             guild_list = [ \
@@ -375,6 +388,7 @@ class Game:
                 Card("Shipowners Guild", C.GUILD, icon = PointForRawMfcGuild(), cost = [R.WOOD, R.WOOD, R.WOOD, R.GLASS, R.PAPYRUS]),
                 Card("Strategists Guild", C.GUILD, icon = LeftRightPointForMinusTokens(), cost = [R.ORE, R.ORE, R.STONE, R.SILK]),
                 Card("Builder's Guild", C.GUILD, icon = PointForWonder(), cost = [R.STONE, R.STONE, R.BRICK, R.BRICK, R.GLASS]),
+                Card("Scientists Guild", C.GUILD, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = [R.WOOD, R.WOOD, R.ORE, R.ORE, R.PAPYRUS]),
                 ]
 
         length_of_deck = len(deck)
@@ -398,32 +412,6 @@ class Game:
 
     # def create_deck(self):
     #     deck = [ \
-    #         Card("Glass 6", C.RAW_R, provides_resources=[(R.BRICK,)], cost = [R.GLASS, R.GLASS, R.GLASS, R.GLASS, R.GLASS, R.GLASS]),
-    #         Card("Glass 3", C.RAW_R, provides_resources=[(R.BRICK,)], cost = [R.GLASS, R.GLASS, R.GLASS]),
-    #         Card("Glass 2", C.RAW_R, provides_resources=[(R.BRICK,)], cost = [R.GLASS, R.GLASS]),
-    #         Card("Glass 1", C.RAW_R, provides_resources=[(R.BRICK,)], cost = [R.GLASS]),
-    #         Card("Brick 3", C.MFG_R, provides_resources=[(R.GLASS,)], cost = [R.BRICK, R.BRICK, R.BRICK]),
-    #         Card("Brick 2", C.MFG_R, provides_resources=[(R.GLASS,)], cost = [R.BRICK, R.BRICK]),
-    #         Card("Brick 1", C.MFG_R, provides_resources=[(R.GLASS,)], cost = [R.BRICK]),
-    #     ]
-
-    #     return deck
-
-    # def create_deck(self):
-    #     deck = [ \
-    #         Card("EAST TRADING POST", C.COMMERCIAL, icon = RightRawDiscount(), provides_coupons = ["FORUM"], num_players = 3),
-    #         Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 3),
-    #         Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 3),
-    #         Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 3),
-    #         Card("LOOM", C.MFG_R, provides_resources = [(R.SILK,)], num_players = 3),
-    #         Card("GLASSWORKS", C.MFG_R, provides_resources = [(R.GLASS,)], num_players = 3),
-    #         Card("PRESS", C.MFG_R, provides_resources = [(R.PAPYRUS,)], num_players = 3),
-    #         ]
-
-    #     return deck
-
-    # def create_deck(self):
-    #     deck = [ \
     #         Card("Workers Guild", C.GUILD, icon = PointForRaw(), cost = [R.ORE, R.ORE, R.BRICK, R.STONE, R.WOOD]),
     #         Card("Workers Guild", C.GUILD, icon = PointForRaw(), cost = []),
     #         Card("Craftmens Guild", C.GUILD, icon = TwoPointForMfc(), cost = [R.ORE, R.ORE, R.STONE, R.STONE]),
@@ -433,7 +421,94 @@ class Game:
     #         Card("Philosophers Guild", C.GUILD, icon = OnePointForScience(), cost = [R.BRICK, R.BRICK, R.BRICK, R.PAPYRUS, R.SILK]),
     #         Card("Shipowners Guild", C.GUILD, icon = PointForRawMfcGuild(), cost = [R.WOOD, R.WOOD, R.WOOD, R.GLASS, R.PAPYRUS]),
     #         Card("Strategists Guild", C.GUILD, icon = LeftRightPointForMinusTokens(), cost = [R.ORE, R.ORE, R.STONE, R.SILK]),
-    #         Card("Builder's Guild", C.GUILD, icon = PointForWonder(), cost = [R.STONE, R.STONE, R.BRICK, R.BRICK, R.GLASS]),
+    #         Card("Builders Guild", C.GUILD, icon = PointForWonder(), cost = [R.STONE, R.STONE, R.BRICK, R.BRICK, R.GLASS]),
+    #         Card("Scientists Guild", C.GUILD, icon = ScienceOptions(), cost = [R.WOOD, R.WOOD, R.ORE, R.ORE, R.PAPYRUS]),
+    #         ]
+
+    #     return deck
+
+    # def create_deck(self):
+    #     deck = [ \
+    #         Card("Scientists Guild", C.GUILD, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = []),
+    #         Card("Scientists Guild", C.GUILD, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = []),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [], num_players = 3),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COG,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [], num_players = 3),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.TABLET,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [], num_players = 3),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COG,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [], num_players = 3),
+    #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [], num_players = 3),
+    #         ]
+
+    #     return deck
+
+    # def create_deck(self):
+    #     deck = [ \
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,), (R.BRICK,), (R.BRICK,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.STONE,), (R.STONE,), (R.STONE,), (R.STONE,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,), (R.ORE,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,), (R.BRICK,), (R.BRICK,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.STONE,), (R.STONE,), (R.STONE,), (R.STONE,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,), (R.BRICK,), (R.BRICK,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.STONE,), (R.STONE,), (R.STONE,), (R.STONE,)]),
+    #         Card("Resources", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,), (R.ORE,), (R.ORE,)]),
+    #         ]
+
+    #     return deck
+
+    # def create_deck(self):
+    #     deck = [ \
+    #         Card("Alexandria Start A", C.WONDER_START, provides_resources = [(R.GLASS,)]), 
+    #         Card("Alexandria One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), 
+    #         Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.BRICK, R.ORE, R.WOOD, R.STONE)], cost = [R.ORE, R.ORE]), 
+    #         Card("Alexandria Three", C.WONDER_C, points = 7, cost = [R.GLASS, R.GLASS]),
+    #         Card("Alexandria Start B", C.WONDER_START, provides_resources = [(R.GLASS,)]), 
+    #         Card("Alexandria One", C.WONDER_C, provides_resources = [(R.WOOD, R.STONE, R.ORE, R.BRICK)], cost = [R.BRICK, R.BRICK]), 
+    #         Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], cost = [R.WOOD, R.WOOD]), 
+    #         Card("Alexandria Three", C.WONDER_C, points = 7, cost = [R.STONE, R.STONE, R.STONE]),
+    #         Card("Babylon Start A", C.WONDER_START, provides_resources = [(R.BRICK,)]), 
+    #         Card("Babylon One", C.WONDER_C, points = 3, cost = [R.BRICK, R.BRICK]), 
+    #         Card("Babylon Two", C.WONDER_C, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = [R.WOOD, R.WOOD, R.WOOD]), 
+    #         Card("Babylon Three", C.WONDER_C, points = 7, cost = [R.BRICK, R.BRICK, R.BRICK, R.BRICK]),
+    #         Card("Babylon Start B", C.WONDER_START, provides_resources = [(R.BRICK,)]), 
+    #         Card("Babylon One", C.WONDER_C, points = 3, cost = [R.SILK, R.BRICK]), 
+    #         Card("Babylon Two", C.WONDER_C, icon = PlayLastCard(), cost = [R.WOOD, R.WOOD, R.GLASS]), 
+    #         Card("Babylon Three", C.WONDER_C, provides_sciences = [(S.TABLET, S.COMPASS, S.COG)], cost = [R.BRICK, R.BRICK, R.BRICK, R.PAPYRUS]),
+    #         Card("Ghiza Start A", C.WONDER_START, provides_resources = [(R.STONE,)]), 
+    #         Card("Ghiza One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), 
+    #         Card("Ghiza Two", C.WONDER_C, points = 5, cost = [R.WOOD, R.WOOD, R.WOOD]), 
+    #         Card("Ghiza Three", C.WONDER_C, points = 7, cost = [R.STONE, R.STONE, R.STONE, R.STONE]),
+    #         Card("Ephesos Start A", C.WONDER_START, provides_resources = [(R.PAPYRUS,)]), 
+    #         Card("Ephesos One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), 
+    #         Card("Ephesos Two", C.WONDER_C, provides_money = 9, cost = [R.WOOD, R.WOOD]), 
+    #         Card("Ephesos Three", C.WONDER_C, points = 7, cost = [R.PAPYRUS, R.PAPYRUS]),
+    #         Card("Ephesos Start B", C.WONDER_START, provides_resources = [(R.PAPYRUS,)]), 
+    #         Card("Ephesos One", C.WONDER_C, points = 2, provides_money = 4, icon = TwoPointFourGold(), cost = [R.STONE, R.STONE]), 
+    #         Card("Ephesos Two", C.WONDER_C, points = 3, provides_money = 4, icon = ThreePointFourGold(), cost = [R.WOOD, R.WOOD]), 
+    #         Card("Ephesos Three", C.WONDER_C, points = 5, provides_money = 4, icon = FivePointFourGold(), cost = [R.PAPYRUS, R.SILK, R.GLASS]),
+    #         Card("Rhodos Start A", C.WONDER_START, provides_resources = [(R.ORE,)]), 
+    #         Card("Rhodos One", C.WONDER_C, points = 3, cost = [R.WOOD, R.WOOD]), 
+    #         Card("Rhodos Two", C.WONDER_C, num_shields = 2, cost = [R.BRICK, R.BRICK, R.BRICK]), 
+    #         Card("Rhodos Three", C.WONDER_C, points = 7, cost = [R.ORE, R.ORE, R.ORE, R.ORE]),
+    #         Card("Olympia Start A", C.WONDER_START, provides_resources = [(R.WOOD,)]), 
+    #         Card("Olympia One", C.WONDER_C, points = 3, cost = [R.WOOD, R.WOOD]), \
+    #         Card("Olympia Two", C.WONDER_C, icon = GiveFreeCard(), cost = [R.STONE, R.STONE]), 
+    #         Card("Olympia Three", C.WONDER_C, points = 7, cost = [R.ORE, R.ORE]),
+    #         Card("Olympia Start B", C.WONDER_START, provides_resources = [(R.WOOD,)]), 
+    #         Card("Olympia One", C.WONDER_C, icon = RawDiscount(), cost = [R.WOOD, R.WOOD]), 
+    #         Card("Olympia Two", C.WONDER_C, points = 5, cost = [R.STONE, R.STONE]), 
+    #         Card("Olympia Three", C.WONDER_C, icon = CopyGuild(), cost = [R.ORE, R.ORE, R.SILK])
+    #         ]
+
+    #     return deck
+
+    # def create_deck(self):
+    #     deck = [ \
+    #         Card("Golden Shield", C.WONDER_C, num_shields = 1, provides_money = 5, cost = [R.WOOD]),
+    #         Card("Golden Shields", C.WONDER_C, num_shields = 2, provides_money = 5, cost = [R.WOOD]),
+    #         Card("Golden Points", C.WONDER_C, points = 2, provides_money = 4, cost = [R.WOOD]),
+    #         Card("Pointy Shields", C.WONDER_C, points = 2, num_shields = 2, cost = [R.WOOD]),
     #         ]
 
     #     return deck
@@ -454,15 +529,132 @@ class Game:
         self.hands = self.create_hands(self.deck)
 
         for player in self.players:
+            for card in player.cards:
+                if card.icon:
+                    card.icon.on_next_age(player, self.players)
             player.current_score = self.score_player(player)
 
-    def assign_wonders(self):
-        alexandria_card_list = [Card("Alexandria Start", C.WONDER_START, provides_resources = [(R.GLASS,)]), Card("Alexandria One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.BRICK, R.ORE, R.WOOD, R.STONE)], cost = [R.ORE, R.ORE]), Card("Alexandria Three", C.WONDER_C, points = 7, cost = [R.GLASS, R.GLASS])]
+    def end_game(self):
+        self.war()
 
-        Alexandria = Wonder("Alexandria", pg.image.load("Images/Alexandria.png"), alexandria_card_list)
-        wonder_list = [Alexandria, Alexandria, Alexandria, Alexandria, Alexandria, Alexandria, Alexandria]
+        winners = []
+        best_score = -1
+        for player in self.players:
+            player.current_score = self.score_player(player)
+            if player.current_score > best_score:
+                winners = [player.player_number]
+            elif player.current_score == best_score:
+                winners.append(player.player_number)
+        if len(winners) == 1:
+            print("Player number", winners[0], "wins!")
+        else:
+            print("A tie!")
+            print("List of winners: ")
+            print("--------")
+            for winner in winners:
+                print(winner.player_number)
+            print("--------")
+
+
+    def create_wonder_list(self):
+        alexandria_a_card_list = [Card("Alexandria Start A", C.WONDER_START, provides_resources = [(R.GLASS,)]), \
+                                    Card("Alexandria One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), \
+                                    Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.BRICK, R.ORE, R.WOOD, R.STONE)], cost = [R.ORE, R.ORE]), \
+                                    Card("Alexandria Three", C.WONDER_C, points = 7, cost = [R.GLASS, R.GLASS])]
+        alexandria_b_card_list = [Card("Alexandria Start B", C.WONDER_START, provides_resources = [(R.GLASS,)]), \
+                                    Card("Alexandria One", C.WONDER_C, provides_resources = [(R.WOOD, R.STONE, R.ORE, R.BRICK)], cost = [R.BRICK, R.BRICK]), \
+                                    Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.GLASS, R.SILK, R.PAPYRUS)], cost = [R.WOOD, R.WOOD]), \
+                                    Card("Alexandria Three", C.WONDER_C, points = 7, cost = [R.STONE, R.STONE, R.STONE])]
+        babylon_a_card_list = [Card("Babylon Start A", C.WONDER_START, provides_resources = [(R.BRICK,)]), \
+                                Card("Babylon One", C.WONDER_C, points = 3, cost = [R.BRICK, R.BRICK]), \
+                                Card("Babylon Two", C.WONDER_C, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = [R.WOOD, R.WOOD, R.WOOD]), \
+                                Card("Babylon Three", C.WONDER_C, points = 7, cost = [R.BRICK, R.BRICK, R.BRICK, R.BRICK])]
+        babylon_b_card_list = [Card("Babylon Start B", C.WONDER_START, provides_resources = [(R.BRICK,)]), \
+                                Card("Babylon One", C.WONDER_C, points = 3, cost = [R.SILK, R.BRICK]), \
+                                Card("Babylon Two", C.WONDER_C, icon = PlayLastCard(), cost = [R.WOOD, R.WOOD, R.GLASS]), \
+                                Card("Babylon Three", C.WONDER_C, provides_sciences = [(S.TABLET, S.COMPASS, S.COG)], icon = ScienceOptions(), cost = [R.BRICK, R.BRICK, R.BRICK, R.PAPYRUS])]
+        ghiza_a_card_list = [Card("Ghiza Start A", C.WONDER_START, provides_resources = [(R.STONE,)]), \
+                                Card("Ghiza One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), \
+                                Card("Ghiza Two", C.WONDER_C, points = 5, cost = [R.WOOD, R.WOOD, R.WOOD]), \
+                                Card("Ghiza Three", C.WONDER_C, points = 7, cost = [R.STONE, R.STONE, R.STONE, R.STONE])]
+        ghiza_b_card_list = [Card("Ghiza Start B", C.WONDER_START, provides_resources = [(R.STONE,)]), \
+                                Card("Ghiza One", C.WONDER_C, points = 3, cost = [R.WOOD, R.WOOD]), \
+                                Card("Ghiza Two", C.WONDER_C, points = 5, cost = [R.STONE, R.STONE, R.STONE]), \
+                                Card("Ghiza Three", C.WONDER_C, points = 5, cost = [R.BRICK, R.BRICK, R.BRICK]), \
+                                Card("Ghiza Four", C.WONDER_C, points = 7, cost = [R.STONE, R.STONE, R.STONE, R.STONE, R.PAPYRUS])]
+        ephesos_a_card_list = [Card("Ephesos Start A", C.WONDER_START, provides_resources = [(R.PAPYRUS,)]), \
+                                Card("Ephesos One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), \
+                                Card("Ephesos Two", C.WONDER_C, provides_money = 9, cost = [R.WOOD, R.WOOD]), \
+                                Card("Ephesos Three", C.WONDER_C, points = 7, cost = [R.PAPYRUS, R.PAPYRUS])]
+        ephesos_b_card_list = [Card("Ephesos Start B", C.WONDER_START, provides_resources = [(R.PAPYRUS,)]), \
+                                Card("Ephesos One", C.WONDER_C, points = 2, provides_money = 4, icon = TwoPointFourGold(), cost = [R.STONE, R.STONE]), \
+                                Card("Ephesos Two", C.WONDER_C, points = 3, provides_money = 4, icon = ThreePointFourGold(), cost = [R.WOOD, R.WOOD]), \
+                                Card("Ephesos Three", C.WONDER_C, points = 5, provides_money = 4, icon = FivePointFourGold(), cost = [R.PAPYRUS, R.SILK, R.GLASS])]
+        rhodos_a_card_list = [Card("Rhodos Start A", C.WONDER_START, provides_resources = [(R.ORE,)]), \
+                                Card("Rhodos One", C.WONDER_C, points = 3, cost = [R.WOOD, R.WOOD]), \
+                                Card("Rhodos Two", C.WONDER_C, num_shields = 2, cost = [R.BRICK, R.BRICK, R.BRICK]), \
+                                Card("Rhodos Three", C.WONDER_C, points = 7, cost = [R.ORE, R.ORE, R.ORE, R.ORE])]
+        rhodos_b_card_list = [Card("Rhodos Start B", C.WONDER_START, provides_resources = [(R.ORE,)]), \
+                                Card("Rhodos One", C.WONDER_C, num_shields = 1, points = 3, provides_money = 3, icon = OneShieldThreePointThreeGold(), cost = [R.STONE, R.STONE, R.STONE]), \
+                                Card("Rhodos Two", C.WONDER_C, num_shields = 1, points = 4, provides_money = 4, icon = OneShieldFourPointFourGold(), cost = [R.ORE, R.ORE, R.ORE, R.ORE])]
+        olympia_a_card_list = [Card("Olympia Start A", C.WONDER_START, provides_resources = [(R.WOOD,)]), \
+                                Card("Olympia One", C.WONDER_C, points = 3, cost = [R.WOOD, R.WOOD]), \
+                                Card("Olympia Two", C.WONDER_C, icon = GiveFreeCard(), cost = [R.STONE, R.STONE]), \
+                                Card("Olympia Three", C.WONDER_C, points = 7, cost = [R.ORE, R.ORE])]
+        olympia_b_card_list = [Card("Olympia Start B", C.WONDER_START, provides_resources = [(R.WOOD,)]), \
+                                Card("Olympia One", C.WONDER_C, icon = RawDiscount(), cost = [R.WOOD, R.WOOD]), \
+                                Card("Olympia Two", C.WONDER_C, points = 5, cost = [R.STONE, R.STONE]), \
+                                Card("Olympia Three", C.WONDER_C, icon = CopyGuild(), cost = [R.ORE, R.ORE, R.SILK])]
+
+        alexandria_a = Wonder("Alexandria", pg.image.load("Images/Wonders/alexandria_a.png"), alexandria_a_card_list)
+        alexandria_b = Wonder("Alexandria", pg.image.load("Images/Wonders/alexandria_b.png"), alexandria_b_card_list)
+        alexandria = [alexandria_a, alexandria_b]
+
+        babylon_a = Wonder("Babylon", pg.image.load("Images/Wonders/babylon_a.png"), babylon_a_card_list)
+        babylon_b = Wonder("Babylon", pg.image.load("Images/Wonders/babylon_b.png"), babylon_b_card_list)
+        babylon = [babylon_a, babylon_b]
+
+        ghiza_a = Wonder("Ghiza", pg.image.load("Images/Wonders/ghiza_a.png"), ghiza_a_card_list)
+        ghiza_b = Wonder("Ghiza", pg.image.load("Images/Wonders/ghiza_b.png"), ghiza_b_card_list)
+        ghiza = [ghiza_a, ghiza_b]
+
+        ephesos_a = Wonder("Ephesos", pg.image.load("Images/Wonders/ephesos_a.png"), ephesos_a_card_list)
+        ephesos_b = Wonder("Ephesos", pg.image.load("Images/Wonders/ephesos_b.png"), ephesos_b_card_list)
+        ephesos = [ephesos_a, ephesos_b]
+
+        rhodos_a = Wonder("Rhodos", pg.image.load("Images/Wonders/rhodos_a.png"), rhodos_a_card_list)
+        rhodos_b = Wonder("Rhodos", pg.image.load("Images/Wonders/rhodos_b.png"), rhodos_b_card_list)
+        rhodos = [rhodos_a, rhodos_b]
+
+        olympia_a = Wonder("Olympia", pg.image.load("Images/Wonders/olympia_a.png"), olympia_a_card_list)
+        olympia_b = Wonder("Olympia", pg.image.load("Images/Wonders/olympia_b.png"), olympia_b_card_list)
+        olympia = [olympia_a, olympia_b]
+
+        wonder_list = [alexandria, babylon, ghiza, ephesos, rhodos, olympia]
         random.shuffle(wonder_list)
         return wonder_list
+
+        # BUG WITH THE THE DRAWING OF PRETTY MUCH EVERYTHING IN BABYLON B
+
+    def assign_wonders(self, wonder_list):
+        for i, player in enumerate(self.players):
+            if not player.bot:
+                print("You have selected {}!".format(wonder_list[i][0].name))
+                # the 2 length is for debuging and will skip the choosing a side part
+                if len(wonder_list[i]) == 1:
+                    player.wonder = wonder_list[i][0]
+                    continue
+                player_choice = input("Would you like side A or side B? ")
+                while True:
+                    if player_choice == "a" or player_choice == "A":
+                        player.wonder = wonder_list[i][0]
+                        break
+                    elif player_choice == "b" or player_choice == "B":
+                        player.wonder = wonder_list[i][1]
+                        break
+                    print("Invalid Response Recieved")
+                    player_choice = input("Please enter A or B")
+                    
 
     def left_right_players(self, player):
         player_index = player.player_number
@@ -501,12 +693,10 @@ class Game:
                 else:
                     player.war_tokens.append(5)
 
-                
-
 class Player:
-    def __init__(self, player_number, wonder):
+    def __init__(self, player_number):
         self.player_number = player_number
-        self.wonder = wonder
+        self.wonder = None
         self.cards = []
         self.money = 3
         self.num_shields = 0
@@ -520,6 +710,13 @@ class Player:
         self.spent_money_r = 0
         self.war_tokens = []
         self.current_score = 1
+
+        self.wonder_action = None
+        self.wonder_selected = False
+        self.play_last_card = False
+        self.play_for_free = False
+        
+        self.bot = False
 
     def give_moneys_for_discard(self):
         self.money += 3
@@ -535,10 +732,6 @@ class Player:
             return False
 
     def can_play_card(self, card):
-        # if card.name == "Glass 3":
-        #     print("checking 3")
-        # if card.name == "Glass 2":
-        #     print("checking 2")
         resource_tuples = self.available_resources_tuples(self.cards)
 
         for player_card in self.cards:
@@ -646,7 +839,7 @@ class Wonder:
 
 
 class Icon():
-    def __init__(self, image, size):
+    def __init__(self, image = pg.image.load("Images/image_not_found.png"), size = [50, 50]):
         self.image = image
         self.size = size
 
@@ -670,6 +863,9 @@ class Icon():
             right_player = player_list[player_index + 1]
 
         return left_player, right_player
+
+    def on_next_age(self, player, player_list):
+        return
 
 class DiscountIcon(Icon):
     def __init__(self, direction, type, new_cost, image, size):
@@ -700,6 +896,13 @@ class RightRawDiscount(DiscountIcon):
     def __init__(self):
         image = pg.image.load("Images/right_r_discount.png")
         super().__init__("right", "raw", 1, image, [100, 36])
+
+class RawDiscount(DiscountIcon):
+    # 951 by 300
+    def __init__(self):
+        # image does not currently exist because I think this is only on a wonder
+        image = pg.image.load("Images/raw_discount.png")
+        super().__init__("both", "raw", 1, image, [100, 32])
 
 class ManufactoredDiscount(DiscountIcon):
     def __init__(self):
@@ -751,7 +954,7 @@ class StuffPerCard(Icon):
         if "right" in self.directions:
             total += self.total_cards(right_player.cards)
 
-        print("icon score provided", total * self.provides[1])
+        # print("icon score provided", total * self.provides[1])
         return total * self.provides[1]
 
         
@@ -896,4 +1099,124 @@ class LeftRightPointForMinusTokens(StuffForMilitaryTokens):
         # 435 by 241
         image = pg.image.load("Images/left_right_point_for_minus_tokens.png")
         super().__init__(["left", "right"], [0, 1], -1, image, [81, 45])
+
+
+class ScienceOptions(Icon):
+    # dummy icon, only used for image
+    def __init__(self):
+        # 745 by 190
+        image = pg.image.load("Images/science_options.png")
+        super().__init__(image, [100, 26])
+
+class PlayLastCard(Icon):
+    def __init__(self):
+        image = pg.image.load("Images/play_last_card.png")
+        # 385 / 244
+        super().__init__(image, [65, 41])
+
+    def on_played(current_player, player_list):
+        # potential bug here where playing this icon as the last card will then allow another card to be played. I think I'm calling that a feature though
+        current_player.play_last_card = True
+
+class GiveFreeCard(Icon):
+    # 258 by 240
+    def __init__(self):
+        image = pg.image.load("Images/free_card.png")
+        super().__init__(image, [54, 50])
+
+    def on_played(current_player, player_list):
+        current_player.wonder_action = FreeCard()
+
+    def on_next_age(self, player, player_list):
+        player.wonder_action = FreeCard()
+
+class CopyGuild(Icon):
+    # 447 by 214
+    def __init__(self):
+        image = pg.image.load("Images/copy_guild.png")
+
+        super().__init__(image, [75, 36])
+
+    def score(self, current_player, player_list):
+        left_player, right_player = self.left_right_players(current_player, player_list)
+        neighbor_cards = left_player.cards + right_player.cards
+
+        best_score = 0
+        best_card = None
+        
+        for card in neighbor_cards:
+            if card.card_type == C.GUILD:
+                current_player.cards.append(card)
+                test_score = Game().score_player(current_player)
+                if test_score > best_score:
+                    best_score = test_score
+                    best_card = card.name
+
+        print("best copy option was", best_card, "giving", best_score, "points")
+        return best_score
+
+# dummy icons because I can't be bothered to draw shields, coins, and points on the same card
+
+class TwoPointFourGold(Icon):
+    def __init__(self):
+        image = pg.image.load("Images/Multi/two_point_four_gold.png")
+        super().__init__(image, [80, 40])
+
+class ThreePointFourGold(Icon):
+    def __init__(self):
+        image = pg.image.load("Images/Multi/three_point_four_gold.png")
+        super().__init__(image, [80, 40])
+
+class FivePointFourGold(Icon):
+    def __init__(self):
+        image = pg.image.load("Images/Multi/five_point_four_gold.png")
+        super().__init__(image, [80, 40])
+
+class OneShieldThreePointThreeGold(Icon):
+    def __init__(self):
+        # 633 by 207
+        image = pg.image.load("Images/Multi/one_shield_three_point_three_gold.png")
+        super().__init__(image, [90, 29])
+
+class OneShieldFourPointFourGold(Icon):
+    def __init__(self):
+        image = pg.image.load("Images/Multi/one_shield_four_point_four_gold.png")
+        super().__init__(image, [90, 29])
+
+class OneShieldSevenPointsSevenGold(Icon):
+    def __init__(self):
+        image = pg.image.load("Images/Multi/one_shield_seven_point_seven_gold.png")
+        super().__init__(image, [90, 29])
+
+
+
+class WonderFunction():
+    def __init__(self, active = False):
+        self.active = active
+
+    def on_activated(self, player):
+        if self.active:
+            print("Error: No wonder activation function found")
+            return
+        else:
+            print("Error: No wonder deactivation function found")
+            return
+
+# maybe one day draw these icons in the all cards view
+
+class FreeCard(WonderFunction):
+    def __init__(self):
+        super().__init__(False)
+
+    def on_activated(self, player):
+        if self.active:
+            player.play_for_free = False
+            self.active = False
+        else:
+            player.play_for_free = True
+            self.active = True
+
+    
+
+    
 

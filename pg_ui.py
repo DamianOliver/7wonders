@@ -20,7 +20,6 @@ import pygame as pg
 import random
 
 i = 0
-hand = Game().hands[(i + Game().turn) % len(Game().hands)]
 
 screen_dimension = (1440, 1000)
 pg.display.set_caption("7 Wonders")
@@ -40,6 +39,7 @@ discard = False
 class PgUi:
     def __init__(self):
         self.game = Game()
+        # self.hand = self.game().hands[(i + self.game().turn) % len(self.game().hands)]
         self.board = Board()
         self.controller = GameController(self.game, self.board, "placeholder")
         self.game_view = GameView(self.game, self.board, self.controller)
@@ -88,11 +88,11 @@ class PgUi:
                     self.screen_dimension = screen_dimension
                     self.draw_game()
                     pg.display.update()
-                if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_p:
-                        self.controller.on_p_pressed()
-                        self.draw_game()
-                        pg.display.update()
+                # if event.type == pg.KEYDOWN:
+                #     if event.key == pg.K_p:
+                #         self.controller.on_p_pressed()
+                #         self.draw_game()
+                #         pg.display.update()
 
     def draw_game(self):
         screen.fill(BACKRGOUND_COLOR)

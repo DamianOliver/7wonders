@@ -95,6 +95,8 @@ WONDER_BUTTON_ROUND_DISTANCE = 8
 WONDER_BUTTON_MARGIN = (20, 0)
 WONDER_FONT_SIZE = 20
 
+WONDER_HIGHLIGHT_DISTANCE = 3
+
 MONEY_MARGIN = (20, 0)
 MONEY_IMAGE_SIZE = (60, 60)
 MONEY_FONT_SIZE = 30
@@ -119,6 +121,7 @@ SELF_FILE_FONT_SIZE = 15
 NUM_FILES = 7
 FILE_THICKNESS = 4
 FILE_PROVIDES_IMAGE_SIZE = (17, 17)
+FILE_SCIENCE_OPTIONS_IMAGE_SIZE = (67, 17)
 FILE_PROVIDES_FONT_SIZE = 15
 FILE_SLASH_SIZE = (8, 14)
 
@@ -227,40 +230,61 @@ class SelfView(View):
         return bland_color
 
     def draw(self):
-        self.draw_wonder_board(self.game.players[self.game.current_player_index])
-        self.draw_raw_resources(self.game.players[self.game.current_player_index])
-        self.draw_manufactored_resources(self.game.players[self.game.current_player_index])
-        self.draw_military(self.game.players[self.game.current_player_index])
-        self.draw_science(self.game.players[self.game.current_player_index])
-        self.draw_civic(self.game.players[self.game.current_player_index])
-        self.draw_commercial(self.game.players[self.game.current_player_index])
-        self.draw_guilds(self.game.players[self.game.current_player_index])
+        current_player = self.game.players[self.game.current_player_index]
+        if current_player.wonder_selected:
+            self.draw_wonder_board_highlight()
+        self.draw_wonder_board(current_player)
+        self.draw_raw_resources(current_player)
+        self.draw_manufactored_resources(current_player)
+        self.draw_military(current_player)
+        self.draw_science(current_player)
+        self.draw_civic(current_player)
+        self.draw_commercial(current_player)
+        self.draw_guilds(current_player)
         self.draw_labels()
 
     def draw_wonder_board(self, player):
+        h_offset = 0
+        if player.wonder_selected:
+            h_offset = WONDER_HIGHLIGHT_DISTANCE
+        # subract h offset from 
         board_image = player.wonder.image
-        scaled_image = pg.transform.smoothscale(board_image, WONDER_BOARD_SIZE)
+        scaled_image = pg.transform.smoothscale(board_image, (WONDER_BOARD_SIZE[0], WONDER_BOARD_SIZE[1] - 2 * h_offset))
 
-        screen.blit(scaled_image, self.location)
+        screen.blit(scaled_image, (self.location[0], self.location[1] + WONDER_HIGHLIGHT_DISTANCE))
 
-        GREYOUT_MARGIN = 45
+        shading_list = [[WONDER_BOARD_SIZE[0], 0], [WONDER_BOARD_SIZE[0], 282, 0], [WONDER_BOARD_SIZE[0], 530, 290, 0], [WONDER_BOARD_SIZE[0], 612, 393, 180, 0]]
 
-        shading_size = [(WONDER_BOARD_SIZE[0] - GREYOUT_MARGIN * 2) * ( 3 - player.wonder_level) / 3, WONDER_BOARD_SIZE[1]]
+        shading_value = shading_list[len(player.wonder.layers_list) - 2][player.wonder_level]
 
-        if player.wonder_level > 0:
-            shading_size[0] -= GREYOUT_MARGIN
-        if player.wonder_level > 2:
-            shading_size[0] -= GREYOUT_MARGIN
+        shading_size = (shading_value - h_offset * 2, WONDER_BOARD_SIZE[1] - h_offset * 2)
+        shading_location = (self.location[0] + WONDER_BOARD_SIZE[0] - shading_value + h_offset, self.location[1] + h_offset)
 
-        shading_size[0] += GREYOUT_MARGIN * 2
-
-        shading_location = (self.location[0] + WONDER_BOARD_SIZE[0] - shading_size[0], self.location[1])
-
-        greyout = pg.Surface((shading_size))
+        greyout = pg.Surface(shading_size)
         greyout.set_alpha(190)
         greyout.fill((50, 50, 50))
 
         screen.blit(greyout, shading_location)
+
+    def draw_wonder_board_highlight(self):
+        highlight_size = [WONDER_BOARD_SIZE[0] + 2 * WONDER_HIGHLIGHT_DISTANCE, WONDER_BOARD_SIZE[1] + WONDER_HIGHLIGHT_DISTANCE]
+        highlight_location = [self.location[0] - WONDER_HIGHLIGHT_DISTANCE, self.location[1]]
+
+        pg.draw.rect(screen, HIGHLIGHT_COLOR, pg.Rect(highlight_location, highlight_size), border_radius=int(ROUND_DISTANCE))
+
+    def is_event_inside_wonder_board(self):
+        return \
+            pg.mouse.get_pos()[0] > self.location[0] and \
+            pg.mouse.get_pos()[0] < self.location[0] + WONDER_BOARD_SIZE[0] and \
+            pg.mouse.get_pos()[1] > self.location[1] and \
+            pg.mouse.get_pos()[1] < self.location[1] + WONDER_BOARD_SIZE[1]
+
+    def handle_event(self, event):
+        if self.is_event_inside_wonder_board():
+            if event.type == pg.MOUSEBUTTONDOWN:
+                self.controller.on_wonder_board_selected()
+                return True
+        return False
 
     def load_resource_image(self, resource):
         return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
@@ -459,35 +483,46 @@ class SelfView(View):
         total_tablets = 0
         total_cogs = 0
         total_compasses = 0
+        either_or_total = 0
         for i in range(len(player.cards)):
             card = player.cards[i]
-            if card.card_type == C.SCIENCE:
+            if card.card_type == C.SCIENCE or card.card_type == C.GUILD or card.card_type == C.WONDER_C:
                 total_cards += 1
-                if card.provides_sciences[0] == (S.TABLET):
-                    total_tablets += 1
-                elif card.provides_sciences[0] == (S.COG):
-                    total_cogs += 1
-                elif card.provides_sciences[0] == (S.COMPASS):
-                    total_compasses += 1
+                for symbol in card.provides_sciences:
+                    if len(symbol) == 1:
+                        if symbol[0] == S.TABLET:
+                            total_tablets += 1
+                        elif symbol[0] == S.COG:
+                            total_cogs += 1
+                        elif symbol[0] == S.COMPASS:
+                            total_compasses += 1
+                        else:
+                            print("Error: unrecognized science symbol -", card.provides_sciences[0], " ~ SelfView-draw_science")
+                    else:
+                        either_or_total += 1
 
         for i in range(total_tablets):
             tablet_image = pg.image.load('Images/tablet.png')
             tablet_image = pg.transform.smoothscale(tablet_image, FILE_PROVIDES_IMAGE_SIZE)
-            tablet_image_pos = (self.location[0] + 80 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * i), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
+            tablet_image_pos = (self.location[0] + 83 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * i), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
             screen.blit(tablet_image, tablet_image_pos)
 
         for i in range(total_cogs):
             cog_image = pg.image.load('Images/cog.png')
             cog_image = pg.transform.smoothscale(cog_image, FILE_PROVIDES_IMAGE_SIZE)
-            cog_image_pos = (self.location[0] + 80 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * i), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
+            cog_image_pos = (self.location[0] + 83 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * (i + total_tablets)), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
             screen.blit(cog_image, cog_image_pos)
 
         for i in range(total_compasses):
             compass_image = pg.image.load('Images/compass.png')
             compass_image = pg.transform.smoothscale(compass_image, FILE_PROVIDES_IMAGE_SIZE)
-            compass_image_pos = (self.location[0] + 80 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * i), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
+            compass_image_pos = (self.location[0] + 83 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * (i + total_tablets + total_cogs)), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
             screen.blit(compass_image, compass_image_pos)
 
+        for i in range(either_or_total):
+            either_or_image = pg.image.load('Images/science_options.png')
+            either_or_image = pg.transform.smoothscale(either_or_image, FILE_SCIENCE_OPTIONS_IMAGE_SIZE)
+            either_or_image_pos = (self.location[0] + 83 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * total_cards) + (i * (4 + FILE_SCIENCE_OPTIONS_IMAGE_SIZE[0])), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
 
         total_font = pg.font.SysFont("timesnewroman", SELF_FILE_FONT_SIZE)
         total_font = total_font.render((str(total_cards)), True, (0, 0, 0))
@@ -897,7 +932,7 @@ class AdjacentResourceView(View):
                             return True
 
     def handle_event(self, event):
-        if event.type == pg.MOUSEBUTTONUP:
+        if event.type == pg.MOUSEBUTTONDOWN:
             if self.is_event_inside_resource_map():
                 return True
         return False
@@ -1078,7 +1113,7 @@ class PlayerView(View):
             pg.mouse.get_pos()[1] < self.location[1] + self.size[1]
 
     def handle_event(self, event):
-        if event.type == pg.MOUSEBUTTONUP:
+        if event.type == pg.MOUSEBUTTONDOWN:
             if self.is_inside_player_view():
                 if self.controller.on_player_view_selected(self.player_index):
                     return True
@@ -1189,75 +1224,76 @@ class CardView(View):
             screen.blit(hand_card_coupon_text, hand_card_coupon_location)
 
     def draw_hand_card_provides(self, card, location):
-        if len(card.cost) == 0 and card.money_cost == 0:
-            hand_resource_margin = 0
-        else:
-            hand_resource_margin = 20
-        if card.num_shields > 0:
-            for i in range(card.num_shields):
-                shield = pg.image.load('Images/shield.png')
-                shield = pg.transform.smoothscale(shield, SHIELD_SIZE)
-                shield_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / card.num_shields*(i+1/2) - SHIELD_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
-                screen.blit(shield, (shield_pos[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1]))
-        if card.card_type == C.SCIENCE or card.card_type == C.WONDER_C:
-            for i in range(len(card.provides_sciences)):
-                if card.provides_sciences[i] == S.TABLET:
-                    science_symbol_image = pg.image.load('Images/tablet.png')
-                elif card.provides_sciences[i] == S.COG:
-                    science_symbol_image = pg.image.load('Images/cog.png')
-                elif card.provides_sciences[i] == S.COMPASS:
-                    science_symbol_image = pg.image.load('Images/compass.png')
-                science_symbol_image = pg.transform.smoothscale(science_symbol_image, SCIENCE_SYMBOL_SIZE)
-                science_symbol_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_sciences)*(i+1/2) - SCIENCE_SYMBOL_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
-                screen.blit(science_symbol_image, (science_symbol_image_pos[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1]))
-        if card.points != 0:
-            points_image = pg.image.load('Images/civic_points.png')
-            points_image = pg.transform.smoothscale(points_image, CIVIC_POINTS_SIZE)
-            points_image_pos = (location[0] + HAND_CARD_SIZE[0]/2 - CIVIC_POINTS_SIZE[0]/2, location[1])
-            screen.blit(points_image, points_image_pos)
+            if len(card.cost) == 0 and card.money_cost == 0:
+                hand_resource_margin = 0
+            else:
+                hand_resource_margin = 20
+            if card.num_shields > 0 and not card.icon:
+                for i in range(card.num_shields):
+                    shield = pg.image.load('Images/shield.png')
+                    shield = pg.transform.smoothscale(shield, SHIELD_SIZE)
+                    shield_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / card.num_shields*(i+1/2) - SHIELD_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                    screen.blit(shield, (shield_pos[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1]))
+            if card.card_type == C.SCIENCE or card.card_type == C.WONDER_C and not card.icon:
+                # this can't handle either or science cards
+                for i in range(len(card.provides_sciences)):
+                    if card.provides_sciences[0][i] == S.TABLET:
+                        science_symbol_image = pg.image.load('Images/tablet.png')
+                    elif card.provides_sciences[0][i] == S.COG:
+                        science_symbol_image = pg.image.load('Images/cog.png')
+                    elif card.provides_sciences[0][i] == S.COMPASS:
+                        science_symbol_image = pg.image.load('Images/compass.png')
+                    science_symbol_image = pg.transform.smoothscale(science_symbol_image, SCIENCE_SYMBOL_SIZE)
+                    science_symbol_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_sciences)*(i+1/2) - SCIENCE_SYMBOL_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                    screen.blit(science_symbol_image, (science_symbol_image_pos[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1]))
+            if card.points != 0 and not card.icon:
+                points_image = pg.image.load('Images/civic_points.png')
+                points_image = pg.transform.smoothscale(points_image, CIVIC_POINTS_SIZE)
+                points_image_pos = (location[0] + HAND_CARD_SIZE[0]/2 - CIVIC_POINTS_SIZE[0]/2, location[1])
+                screen.blit(points_image, points_image_pos)
 
-            points_font = pg.font.SysFont('timesnewroman', HAND_CIVIC_POINTS_FONT_SIZE)
-            points_text = points_font.render(str(card.points), True, (255, 255, 255))
-            points_text_size = points_text.get_size()
-            points_text_pos = (points_image_pos[0] + CIVIC_POINTS_SIZE[0]/2 - points_text_size[0]/2, points_image_pos[1] + CIVIC_POINTS_SIZE[1]/2 - points_text_size[1]/2 - 3)
-            screen.blit(points_text, points_text_pos)
+                points_font = pg.font.SysFont('timesnewroman', HAND_CIVIC_POINTS_FONT_SIZE)
+                points_text = points_font.render(str(card.points), True, (255, 255, 255))
+                points_text_size = points_text.get_size()
+                points_text_pos = (points_image_pos[0] + CIVIC_POINTS_SIZE[0]/2 - points_text_size[0]/2, points_image_pos[1] + CIVIC_POINTS_SIZE[1]/2 - points_text_size[1]/2 - 3)
+                screen.blit(points_text, points_text_pos)
 
-        if len(card.provides_resources) > 0:
-            for a in range(len(card.provides_resources)):
-                if len(card.provides_resources[a]) > 1:
-                    choice_resource_hand_size = (60 - len(card.provides_resources[a])*10, 60 - len(card.provides_resources[a])*10)
-                    slash_size = (choice_resource_hand_size[0]/2.5, choice_resource_hand_size[1])
-                    resource_tuple = card.provides_resources[a]
-                    for i in range(len(resource_tuple)):
-                        resource_image = self.load_resource_image(resource=resource_tuple[i])
-                        resource_image = pg.transform.smoothscale(resource_image, choice_resource_hand_size)
-                        resource_image_pos = (HAND_CARD_PROVIDES_MARGIN[0] + location[0] + (choice_resource_hand_size[0] + slash_size[0])*i, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+            if len(card.provides_resources) > 0:
+                for a in range(len(card.provides_resources)):
+                    if len(card.provides_resources[a]) > 1:
+                        choice_resource_hand_size = (60 - len(card.provides_resources[a])*10, 60 - len(card.provides_resources[a])*10)
+                        slash_size = (choice_resource_hand_size[0]/2.5, choice_resource_hand_size[1])
+                        resource_tuple = card.provides_resources[a]
+                        for i in range(len(resource_tuple)):
+                            resource_image = self.load_resource_image(resource=resource_tuple[i])
+                            resource_image = pg.transform.smoothscale(resource_image, choice_resource_hand_size)
+                            resource_image_pos = (HAND_CARD_PROVIDES_MARGIN[0] + location[0] + (choice_resource_hand_size[0] + slash_size[0])*i, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                            screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
+                            if i != len(resource_tuple) - 1:
+                                slash = pg.image.load('Images/slash.png')
+                                slash = pg.transform.smoothscale(slash, (int(slash_size[0]), int(slash_size[1])))
+                                slash_pos = (resource_image_pos[0] + choice_resource_hand_size[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                                screen.blit(slash, (slash_pos[0], slash_pos[1]))
+                    else:
+                        resource_image = self.load_resource_image(resource=card.provides_resources[a][0])
+                        resource_image = pg.transform.smoothscale(resource_image, PROVIDES_RESOURCE_ICON_SIZE)
+                        resource_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_resources)*(a+1/2) - PROVIDES_RESOURCE_ICON_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
                         screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
-                        if i != len(resource_tuple) - 1:
-                            slash = pg.image.load('Images/slash.png')
-                            slash = pg.transform.smoothscale(slash, (int(slash_size[0]), int(slash_size[1])))
-                            slash_pos = (resource_image_pos[0] + choice_resource_hand_size[0], location[1] + HAND_CARD_PROVIDES_MARGIN[1])
-                            screen.blit(slash, (slash_pos[0], slash_pos[1]))
-                else:
-                    resource_image = self.load_resource_image(resource=card.provides_resources[a][0])
-                    resource_image = pg.transform.smoothscale(resource_image, PROVIDES_RESOURCE_ICON_SIZE)
-                    resource_image_pos = (location[0] + hand_resource_margin + (HAND_CARD_SIZE[0] - hand_resource_margin) / len(card.provides_resources)*(a+1/2) - PROVIDES_RESOURCE_ICON_SIZE[0]/2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
-                    screen.blit(resource_image, (resource_image_pos[0], resource_image_pos[1]))
-        if card.provides_money > 0:
-            money_pos = (location[0] + HAND_CARD_SIZE[0] / 2 - PROVIDES_MONEY_SIZE[0] / 2, location[1])
-            money_image = pg.image.load('Images/money_image.png')
-            money_image = pg.transform.smoothscale(money_image, PROVIDES_MONEY_SIZE)
-            screen.blit(money_image, money_pos)
+            if card.provides_money > 0 and not card.icon:
+                money_pos = (location[0] + HAND_CARD_SIZE[0] / 2 - PROVIDES_MONEY_SIZE[0] / 2, location[1])
+                money_image = pg.image.load('Images/money_image.png')
+                money_image = pg.transform.smoothscale(money_image, PROVIDES_MONEY_SIZE)
+                screen.blit(money_image, money_pos)
 
-            money_font = pg.font.SysFont("timesnewroman", PROVIDES_MONEY_FONT_SIZE)
-            money_text = money_font.render(str(card.provides_money), True, (0, 0, 0))
-            money_text_rect = money_text.get_rect(center = (money_pos[0] + PROVIDES_MONEY_SIZE[0]/2, money_pos[1] + PROVIDES_MONEY_SIZE[1]/2))
-            screen.blit(money_text, money_text_rect)
+                money_font = pg.font.SysFont("timesnewroman", PROVIDES_MONEY_FONT_SIZE)
+                money_text = money_font.render(str(card.provides_money), True, (0, 0, 0))
+                money_text_rect = money_text.get_rect(center = (money_pos[0] + PROVIDES_MONEY_SIZE[0]/2, money_pos[1] + PROVIDES_MONEY_SIZE[1]/2))
+                screen.blit(money_text, money_text_rect)
 
-        if card.icon:
-            image = pg.transform.smoothscale(card.icon.image, card.icon.size)
-            image_pos = (location[0] + hand_resource_margin * 0.5 + HAND_CARD_SIZE[0] // 2 - card.icon.size[0] // 2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
-            screen.blit(image, image_pos)
+            if card.icon:
+                image = pg.transform.smoothscale(card.icon.image, card.icon.size)
+                image_pos = (location[0] + hand_resource_margin * 0.5 + HAND_CARD_SIZE[0] // 2 - card.icon.size[0] // 2, location[1] + HAND_CARD_PROVIDES_MARGIN[1])
+                screen.blit(image, image_pos)
 
     def draw_hand_card_cost(self, card, location):
         if len(card.cost) > 0:
@@ -1346,7 +1382,7 @@ class DiscardButtonView(View):
             pg.mouse.get_pos()[1] < self.location[1] + DISCARD_BUTTON_SIZE[1]
     
     def handle_event(self, event):
-        if event.type == pg.MOUSEBUTTONUP:
+        if event.type == pg.MOUSEBUTTONDOWN:
             if self.is_event_inside_discard_button():
                 self.controller.on_discard_button_pressed()
                 return True
@@ -1387,7 +1423,7 @@ class WonderButtonView(View):
             pg.mouse.get_pos()[1] < self.location[1] + WONDER_BUTTON_SIZE[1]
     
     def handle_event(self, event):
-        if event.type == pg.MOUSEBUTTONUP:
+        if event.type == pg.MOUSEBUTTONDOWN:
             if self.is_event_inside_wonder_button():
                 self.controller.on_wonder_button_pressed()
                 return True
@@ -1409,7 +1445,7 @@ class AllCardsViewButton(View):
         pg.draw.rect(screen, pg.Color(All_CARDS_VIEW_BUTTON_COLOR), pg.Rect(self.location, ALL_CARDS_VIEW_BUTTON_SIZE))
 
     def handle_event(self, event):
-        if event.type == pg.MOUSEBUTTONUP:
+        if event.type == pg.MOUSEBUTTONDOWN:
             if self.is_event_inside_all_cards_view_button():
                 self.controller.on_all_cards_button_pressed()
                 return True
@@ -1443,35 +1479,66 @@ class AllCardsView(View):
         if len(self.game.players[self.player_index].cards) == 0:
             return 10
         else:
-            return int(screen_dimension[0] / (ALL_CARDS_SIZE[0] + ALL_CARDS_MARGIN[0] + ALL_CARDS_SPACING))
+            return int((screen_dimension[0] - ALL_CARDS_MARGIN[0]) / (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING))
 
     def draw(self):
+        # Kinda makes it difficult for all the cards to fit but that was already a problem and I don't feel like fixing it - edit - kinda fixed it by making more cards fit
         if self.board.all_cards:
+            pg.draw.rect(screen, (BACKRGOUND_COLOR), (self.location, self.background_size))
+            player = self.game.players[self.player_index]
+            self.draw_wonder_cards(player)
             order_list = [C.WONDER_START, C.WONDER_C, C.RAW_R, C.MFG_R, C.COMMERCIAL, C.MILITARY, C.CIVIC, C.SCIENCE, C.GUILD]
             num_drawn = -1
-            pg.draw.rect(screen, (BACKRGOUND_COLOR), (self.location, self.background_size))
+            wonders_drawn = -1
+
+            num_drawn = -1
             for current_card_type in order_list:
-                for i in range(len(self.game.players[self.player_index].cards)):
-                    card = self.game.players[self.player_index].cards[i]
+                for i in range(len(player.cards)):
+                    card = player.cards[i]
                     if card.card_type == current_card_type:
                         num_drawn += 1
 
                         if num_drawn != 0:
-                            # card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * int((i / self.num_per_row)))
-                            card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (num_drawn % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * int((num_drawn / self.num_per_row)))
+                            card_location = [ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (num_drawn % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((num_drawn / self.num_per_row)) + 1)]
                             # print("i: ", i, "num per row: ", self.num_per_row, "%: ", i % self.num_per_row)
                         else:
-                            card_location = (ALL_CARDS_MARGIN[0], ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING)
+                            card_location = [ALL_CARDS_MARGIN[0], ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING * 2 + ALL_CARDS_SIZE[1]]
 
-                        CardView.draw_hand_card_background(self, card, card_location)
-                        CardView.draw_hand_card_name(self, card.name, card_location)
-                        CardView.draw_coupons(self, card.provides_coupons, card_location)
-                        CardView.draw_hand_card_provides(self, card, card_location)
-                        CardView.draw_hand_card_cost(self, card, card_location)
-                        
+                        if card.card_type == C.WONDER_C or card.card_type == C.WONDER_START:
+                            wonders_drawn += 1
+                            num_drawn -= 1
+
+                            card_location[1] -= ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING
+                            card_location[0] += (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * wonders_drawn
+                            
+                        self.draw_card(card, card_location)
                         
             self.draw_war_tokens()
             self.draw_button()
+
+    def draw_wonder_cards(self, player):
+        for i, card in enumerate(player.wonder.layers_list):
+            # print("drawing", card)
+            if i != 0:
+                card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((i / self.num_per_row))))
+            else:
+                card_location = (ALL_CARDS_MARGIN[0], ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING)
+
+            # print("card location:", card_location)
+
+            self.draw_card(card, card_location)
+
+            greyout = pg.Surface((HAND_CARD_SIZE[0] + ROUND_DISTANCE * 2, HAND_CARD_SIZE[1] + ROUND_DISTANCE * 2))
+            greyout.set_alpha(190)
+            greyout.fill(BACKRGOUND_COLOR)
+            screen.blit(greyout, (card_location[0] - ROUND_DISTANCE, card_location[1] - ROUND_DISTANCE))
+
+    def draw_card(self, card, card_location):
+        CardView.draw_hand_card_background(self, card, card_location)
+        CardView.draw_hand_card_name(self, card.name, card_location)
+        CardView.draw_coupons(self, card.provides_coupons, card_location)
+        CardView.draw_hand_card_provides(self, card, card_location)
+        CardView.draw_hand_card_cost(self, card, card_location)
 
     def draw_war_tokens(self):
         minus_token = pg.image.load("Images/minus_token.png")

@@ -103,16 +103,15 @@ class GameController:
     def reset_side(self, side, current_player):
         if side == "l":
             for b_res in current_player.bought_resources:
-                print("b_res:", b_res)
                 if b_res[0][0] < 600:
-                    # print("b_res:", b_res, b_res[0][0][0])
                     current_player.bought_resources.remove(b_res)
-                    print("reset something")
         else:
             for b_res in current_player.bought_resources:
                 if b_res[0][0] > 600:
-                    print("reset something")
                     current_player.bought_resources.remove(b_res)
+
+    def full_resource_reset(self, current_player):
+        current_player.bought_resources = []
 
     def on_resource_selected(self, side, resource_map, selected_resource):
         if not self.board.all_cards:
@@ -120,55 +119,20 @@ class GameController:
 
             self.reset_side(side, current_player)
 
-            current_player.spent_money_l = 0
-            current_player.spent_money_r = 0
-            # if side == "l":
-            #     if selected_resource[1].is_raw():
-            #         selected_cost = current_player.left_cost_r
-            #     else:
-            #         selected_cost = current_player.left_cost_m
-            #     if current_player.money >= selected_cost:
-            #         current_player.spent_money_l = 0
+            if side == "r":
+                current_player.spent_money_r = 0
+            elif side == "l":
+                current_player.spent_money_l = 0
 
-            #         for resource_tuple in resource_map:
-            #             for resource in resource_tuple:
-            #                 if resource[2]:
-            #                     current_player.bought_resources.append(resource)
-            #                     if resource[1].is_raw():
-            #                         current_player.spent_money_l += current_player.right_cost_r
-            #                     else:
-            #                         current_player.spent_money_l += current_player.right_cost_m
-
-            # else:
-            #     if selected_resource[1].is_raw():
-            #         selected_cost = current_player.right_cost_r
-            #     else:
-            #         selected_cost = current_player.right_cost_m
-            #     if current_player.money >= selected_cost:
-            #         current_player.spent_money_r = 0
-            #         for resource_tuple in resource_map:
-            #             for resource in resource_tuple:
-            #                 if resource[2]:
-            #                     current_player.bought_resources.append(resource)
-            #                     if resource[1].is_raw():
-            #                         current_player.spent_money_r += current_player.right_cost_r
-            #                     else:
-            #                         current_player.spent_money_r += current_player.right_cost_m
-
-            print("bought resources", current_player.bought_resources)
-            print()
             for resource_tuple in resource_map:
                 for resource in resource_tuple:
-                    # print("resource:", resource)
                     if resource[0][0] < 600:
-                        # print("< 600")
                         res_side = "l"
                         if resource[1].is_raw():
                             cost = current_player.left_cost_r
                         else:
                             cost = current_player.left_cost_m
                     else:
-                        # print("> 600")
                         res_side = "r"
                         if resource[1].is_raw():
                             cost = current_player.right_cost_r
@@ -177,22 +141,24 @@ class GameController:
                     
                     if current_player.spent_money_l + current_player.spent_money_r + cost <= current_player.money:
                         if resource[2]:
-                            # print("true")
                             current_player.bought_resources.append(resource)
                             # maybe should be side not res_side
                             if res_side == "l":
                                 current_player.spent_money_l += cost
                             else:
                                 current_player.spent_money_r += cost
-                        # else:
-                        #     print("false")
-                            
 
-                # print("left:", current_player.spent_money_l, "right:", current_player.spent_money_r)
-                print("bought:", current_player.bought_resources)
+            self.board.request_redraw()
 
-            
-
+    def on_wonder_board_selected(self):
+        current_player = self.game.current_player()
+        if current_player.wonder_action:
+            if current_player.wonder_selected:
+                current_player.wonder_selected = False
+                current_player.wonder_action.on_activated(current_player)
+            else:
+                current_player.wonder_selected = True
+                current_player.wonder_action.on_activated(current_player)
             self.board.request_redraw()
 
     def on_player_view_selected(self, index):
@@ -205,13 +171,14 @@ class GameController:
 
     def select_card(self, selected_card_number):
         if not self.board.all_cards:
+            current_player = self.game.current_player()
             hand = self.game.current_player_hand()
             card = hand[selected_card_number]
             selected_card = card
 
-            if self.game.current_player().play_card(selected_card):
+            if current_player.play_card(selected_card) or current_player.play_for_free:
                 if card.icon:
-                    card.icon.on_played(self.game.current_player(), self.game.players)
+                    card.icon.on_played(current_player, self.game.players)
                 del hand[selected_card_number]
                 self.on_end_turn()
                 self.game.current_player_finished()
@@ -234,14 +201,22 @@ class GameController:
         left_player.money += current_player.spent_money_l
         right_player.money += current_player.spent_money_r
 
-        if len(self.game.current_player_hand()) <= 1:
-            if current_player.player_number == len(self.game.players) - 1:
+        if len(self.game.current_player_hand()) <= 1:              
+            if current_player.player_number == len(self.game.players) - 1 and not (current_player.play_last_card and len(self.game.current_player_hand()) == 1):
                 if self.game.age == 3:
-                    print("game over")
+                    self.game.end_game()
                 else:
                     self.game.next_age()
      
         current_player.spent_money_l = 0
         current_player.spent_money_r = 0
+        self.full_resource_reset(current_player)
+
+        if current_player.play_for_free:
+            current_player.play_for_free = False
+            current_player.wonder_action = None
+        current_player.wonder_selected = False
+
+        self.board.request_redraw()
 
         current_player.current_score = self.game.score_player(current_player)
