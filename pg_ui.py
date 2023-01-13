@@ -16,6 +16,7 @@
 from game import *
 from gui.controller import GameController, Board
 from gui.view import *
+from ai import Ai
 import pygame as pg
 import random
 
@@ -46,6 +47,8 @@ class PgUi:
         self.controller.view = self.game_view
         self.game_view.controller = self.controller
         self.screen_dimension = (1440, 1000)
+        self.background_image = pg.image.load("Images/wood_background.png")
+        
 
         # self.init_views()
 
@@ -57,9 +60,12 @@ class PgUi:
         global screen_dimension
 
         # draw initial hand
-        self.game_view.layout(screen_dimension)
-        self.draw_game()
-        pg.display.update()
+        if not self.game.players[0].bot:
+            self.game_view.layout(screen_dimension)
+            self.draw_game()
+            pg.display.update()
+        else:
+            self.controller.on_bot_turn()
         self.run_event_loop()
 
     def run_event_loop(self):
@@ -71,10 +77,11 @@ class PgUi:
             for event in events:
                 if self.game_view.handle_event(event):
                     if self.board.needs_redraw:
-                        self.game_view.layout(self.screen_dimension)
-                        self.draw_game()
-                        pg.display.update()
-                        self.board.needs_redraw = False
+                        if not self.game.current_player().bot:
+                            self.game_view.layout(self.screen_dimension)
+                            self.draw_game()
+                            pg.display.update()
+                            self.board.needs_redraw = False
                     continue
                 elif event.type == pg.QUIT:
                     pg.quit()
@@ -88,13 +95,10 @@ class PgUi:
                     self.screen_dimension = screen_dimension
                     self.draw_game()
                     pg.display.update()
-                # if event.type == pg.KEYDOWN:
-                #     if event.key == pg.K_p:
-                #         self.controller.on_p_pressed()
-                #         self.draw_game()
-                #         pg.display.update()
 
     def draw_game(self):
+        # scaled_image = pg.transform.scale(self.background_image, self.screen_dimension)
+        # screen.blit(scaled_image, (0, 0))
         screen.fill(BACKRGOUND_COLOR)
         self.game_view.draw()
 

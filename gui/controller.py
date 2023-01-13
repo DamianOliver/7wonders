@@ -15,6 +15,7 @@
 
 from gui.view import GameView
 from game import Game
+from ai import Ai
 import pygame as pg
 
 # Controller reacts to events and modifies model (Board)
@@ -46,6 +47,8 @@ class GameController:
         self.board = board
         self.view = view
 
+        self.ai_dict = self.assign_ais()
+
     def on_hand_card_mouse_over(self, hand_card_index):
         if not self.board.all_cards:
             self.board.update_hand_card_highlight(hand_card_index)
@@ -61,27 +64,36 @@ class GameController:
             return
 
     def discard_card(self, selected_card_number):
+        current_player = self.game.current_player()
         if not self.board.all_cards:
             hand = self.game.current_player_hand()
             del hand[selected_card_number]
-            self.game.current_player().give_moneys_for_discard()
+            current_player.give_moneys_for_discard()
             self.on_end_turn()
             self.game.current_player_finished()
             self.board.discard = False
             self.board.request_redraw()
+            if self.game.current_player().bot:
+                self.on_bot_turn()
+            
 
     def build_wonder(self, selected_card_number):
         if not self.board.all_cards:
             current_player = self.game.current_player()
-            if current_player.play_card(current_player.wonder.layers_list[current_player.wonder_level + 1]):
+            wonder_card = current_player.wonder.layers_list[current_player.wonder_level + 1]
+            if current_player.play_card(wonder_card):
                 hand = self.game.current_player_hand()
                 del hand[selected_card_number]
                 current_player.wonder_level += 1
                 hand = self.game.current_player_hand()
+                if wonder_card.icon:
+                    wonder_card.icon.on_played(current_player, self.game.players)
                 self.on_end_turn()
                 self.game.current_player_finished()
                 self.board.play_wonder = False
                 self.board.request_redraw()
+                if self.game.current_player().bot:
+                    self.on_bot_turn()
 
     def on_discard_button_pressed(self):
         if not self.board.all_cards:
@@ -94,9 +106,10 @@ class GameController:
                 self.board.request_redraw()
 
     def on_wonder_button_pressed(self):
+        current_player = self.game.current_player()
         if not self.board.all_cards:
             if not self.board.discard:
-                if self.game.current_player().wonder_level < len(self.game.current_player().wonder.layers_list) - 1:
+                if current_player.wonder_level < len(current_player.wonder.layers_list) - 1:
                     self.board.play_wonder = True
                     self.board.request_redraw()
 
@@ -109,9 +122,6 @@ class GameController:
             for b_res in current_player.bought_resources:
                 if b_res[0][0] > 600:
                     current_player.bought_resources.remove(b_res)
-
-    def full_resource_reset(self, current_player):
-        current_player.bought_resources = []
 
     def on_resource_selected(self, side, resource_map, selected_resource):
         if not self.board.all_cards:
@@ -183,6 +193,8 @@ class GameController:
                 self.on_end_turn()
                 self.game.current_player_finished()
                 self.board.request_redraw()
+                if self.game.current_player().bot:
+                    self.on_bot_turn()
 
     def on_all_cards_button_pressed(self):
         if not self.board.all_cards:
@@ -210,7 +222,12 @@ class GameController:
      
         current_player.spent_money_l = 0
         current_player.spent_money_r = 0
-        self.full_resource_reset(current_player)
+
+        # pretty janky code to make sure that view resets the resource map after each turn
+        if not current_player.bot:
+            current_player.bought_resources = []
+        else:
+            current_player.bought_resources = ["turn ended"]
 
         if current_player.play_for_free:
             current_player.play_for_free = False
@@ -220,3 +237,25 @@ class GameController:
         self.board.request_redraw()
 
         current_player.current_score = self.game.score_player(current_player)
+
+    def assign_ais(self):
+        player_list = self.game.players
+
+        ais = {}
+        for player in player_list:
+            if player.bot:
+                ais[player] = Ai(player, self.game.players)
+
+        return ais
+
+    def on_bot_turn(self):
+        current_player = self.game.current_player()
+        ai = self.ai_dict[current_player]
+        selected_card, action = ai.evaluate(self.game.current_player_hand(), self.game.age)
+        selected_card_index = self.game.current_player_hand().index(selected_card)
+        if action == "play":
+            self.select_card(selected_card_index)
+        elif action == "wonder":
+            self.build_wonder(selected_card_index)
+        elif action == "discard":
+            self.discard_card(selected_card_index)

@@ -257,8 +257,8 @@ class SelfView(View):
 
         shading_value = shading_list[len(player.wonder.layers_list) - 2][player.wonder_level]
 
-        shading_size = (shading_value - h_offset * 2, WONDER_BOARD_SIZE[1] - h_offset * 2)
-        shading_location = (self.location[0] + WONDER_BOARD_SIZE[0] - shading_value + h_offset, self.location[1] + h_offset)
+        shading_size = (shading_value, WONDER_BOARD_SIZE[1] - h_offset * 2)
+        shading_location = (self.location[0] + WONDER_BOARD_SIZE[0] - shading_value, self.location[1] + h_offset)
 
         greyout = pg.Surface(shading_size)
         greyout.set_alpha(190)
@@ -270,7 +270,8 @@ class SelfView(View):
         highlight_size = [WONDER_BOARD_SIZE[0] + 2 * WONDER_HIGHLIGHT_DISTANCE, WONDER_BOARD_SIZE[1] + WONDER_HIGHLIGHT_DISTANCE]
         highlight_location = [self.location[0] - WONDER_HIGHLIGHT_DISTANCE, self.location[1]]
 
-        pg.draw.rect(screen, HIGHLIGHT_COLOR, pg.Rect(highlight_location, highlight_size), border_radius=int(ROUND_DISTANCE))
+        # pg.draw.rect(screen, HIGHLIGHT_COLOR, pg.Rect(highlight_location, highlight_size), border_radius=int(ROUND_DISTANCE)) <-- has the rounding
+        pg.draw.rect(screen, HIGHLIGHT_COLOR, pg.Rect(highlight_location, highlight_size))
 
     def is_event_inside_wonder_board(self):
         return \
@@ -379,8 +380,6 @@ class SelfView(View):
                     screen.blit(slash, (slash_pos[0], slash_pos[1]))
                     total_spacing += (FILE_SLASH_SIZE[0] + 2)
             
-
-
         total_cards_font = pg.font.SysFont("timesnewroman", SELF_FILE_FONT_SIZE)
         total_cards_font = total_cards_font.render((str(total_cards)), True, (255, 255, 255))
         total_cards_font_rect = total_cards_font.get_rect(center = (self.location[0] + 40, self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 1) - (SELF_FILE_HEIGHT / 2)))
@@ -501,6 +500,11 @@ class SelfView(View):
                     else:
                         either_or_total += 1
 
+        science_card_total = 0
+        for card in player.cards:
+            if card.card_type == C.SCIENCE:
+                science_card_total += 1
+
         for i in range(total_tablets):
             tablet_image = pg.image.load('Images/tablet.png')
             tablet_image = pg.transform.smoothscale(tablet_image, FILE_PROVIDES_IMAGE_SIZE)
@@ -525,7 +529,7 @@ class SelfView(View):
             either_or_image_pos = (self.location[0] + 83 + ((4 + FILE_PROVIDES_IMAGE_SIZE[0]) * total_cards) + (i * (4 + FILE_SCIENCE_OPTIONS_IMAGE_SIZE[0])), self.location[1] - (SELF_FILE_HEIGHT * (NUM_FILES - 3)))
 
         total_font = pg.font.SysFont("timesnewroman", SELF_FILE_FONT_SIZE)
-        total_font = total_font.render((str(total_cards)), True, (0, 0, 0))
+        total_font = total_font.render((str(science_card_total)), True, (0, 0, 0))
         total_font_3_rect = total_font.get_rect(center = (self.location[0] + 40, self.location[1] - SELF_FILE_HEIGHT * (NUM_FILES - 4) - (SELF_FILE_HEIGHT / 2)))
         screen.blit(total_font, total_font_3_rect)
 
@@ -718,6 +722,10 @@ class AdjacentResourceView(View):
         else:
             screen.blit(raw_cost_image, second_location)
 
+    def reset_resource_map(self):
+        self.resource_map_r = []
+        self.resource_map_l = []
+
     def draw_resources(self, player, margin):
         map_list = []
         total_stone = 0
@@ -728,6 +736,11 @@ class AdjacentResourceView(View):
         total_papyrus = 0
         total_silk = 0
         either_or_list = []
+
+        if player.bought_resources == ["turn ended"]:
+            player.bought_resources = []
+            self.reset_resource_map()
+
         for i, card in enumerate(player.cards):
             if card.card_type == C.RAW_R or card.card_type == C.MFG_R or card.card_type == C.WONDER_START:
                 for resource in player.cards[i].provides_resources:
@@ -832,11 +845,8 @@ class AdjacentResourceView(View):
                 map_list.append(location_list)
 
         current_player = self.game.current_player()
-        
+
         if margin > 100:
-            # if current_player.spent_money_r == 0 and current_player.spent_money_l == 0:
-            #     self.resource_map_r = map_list
-            #     print("reset 1")
             if len(map_list) != len(self.resource_map_r):
                     self.resource_map_r = map_list
                     # print("reset 2")
@@ -1015,7 +1025,7 @@ class PlayerView(View):
         shield_size = (int(self.size[0] / 5), int(self.size[0] / 5))
         shield = pg.image.load('Images/shield.png')
         shield = pg.transform.smoothscale(shield, shield_size)
-        shield_pos = (self.location[0] + self.size[0] - shield_size[0] - 10, self.location[1] + self.size[1] / 2 - shield_size[1] / 2)
+        shield_pos = (self.location[0] + self.size[0] * 2/3 + 10, self.location[1] + self.size[1] / 2 - shield_size[1] / 2)
         screen.blit(shield, (shield_pos[0], shield_pos[1]))
 
     def draw_shield_text(self, player):
@@ -1025,7 +1035,7 @@ class PlayerView(View):
         num_shields_font_size = int(shield_size[0] / 2)
         num_shields_font = pg.font.SysFont('georgia', num_shields_font_size)
         num_shields_text = num_shields_font.render(str(player.num_shields), True, (30, 30, 30))
-        num_shields_text_rect = num_shields_text.get_rect(center = (shield_pos[0] + shield_size[0] / 2, shield_pos[1] + shield_size[1] + self.size[1] / 15))
+        num_shields_text_rect = num_shields_text.get_rect(center = (self.location[0] + self.size[0] * 2/3 + 10 + shield_size[0] / 2, shield_pos[1] + shield_size[1] + self.size[1] / 15))
         screen.blit(num_shields_text, num_shields_text_rect)
 
     def draw_shield_num(self, player):
@@ -1197,10 +1207,11 @@ class CardView(View):
         current_player = self.game.current_player()
         if (not current_player.can_play_card(card) and not self.board.discard and not self.board.play_wonder) or \
             (self.board.play_wonder and not current_player.can_play_wonder()):
-            greyout = pg.Surface((HAND_CARD_SIZE[0] + ROUND_DISTANCE * 2, HAND_CARD_SIZE[1] + ROUND_DISTANCE * 2))
+            greyout = pg.Surface((HAND_CARD_SIZE[0], HAND_CARD_SIZE[1]))
             greyout.set_alpha(190)
             greyout.fill(BACKRGOUND_COLOR)
-            screen.blit(greyout, (self.location[0] - ROUND_DISTANCE, self.location[1] - ROUND_DISTANCE))
+            # pg.draw.rect(greyout, pg.Color(BACKRGOUND_COLOR), pg.Rect(self.location, HAND_CARD_SIZE), border_radius=int(ROUND_DISTANCE))
+            screen.blit(greyout, (self.location[0], self.location[1]))
 
     def draw_hand_card_background(self, card, location):
         color = CARD_COLORS.get(card.card_type, (0, 0, 0))

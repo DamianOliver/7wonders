@@ -17,6 +17,7 @@ import pygame as pg
 from enum import Enum
 
 NUM_PLAYERS = 3
+NUM_BOTS = NUM_PLAYERS - 1
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -72,7 +73,10 @@ class Game:
         self.players = []
         
         for i in range(NUM_PLAYERS):
-            self.players.append(Player(i))
+            if i < NUM_BOTS:
+                self.players.append(Player(i, True))
+            else:
+                self.players.append(Player(i, False))
 
         self.assign_wonders(self.create_wonder_list())
         for player in self.players:
@@ -641,7 +645,7 @@ class Game:
             if not player.bot:
                 print("You have selected {}!".format(wonder_list[i][0].name))
                 # the 2 length is for debuging and will skip the choosing a side part
-                if len(wonder_list[i]) == 1:
+                if len(wonder_list[i]) == 1 or len(wonder_list[i]) == 2:
                     player.wonder = wonder_list[i][0]
                     continue
                 player_choice = input("Would you like side A or side B? ")
@@ -654,6 +658,8 @@ class Game:
                         break
                     print("Invalid Response Recieved")
                     player_choice = input("Please enter A or B")
+            else:
+                player.wonder = wonder_list[i][random.randrange(0, len(wonder_list[i]))]
                     
 
     def left_right_players(self, player):
@@ -694,7 +700,7 @@ class Game:
                     player.war_tokens.append(5)
 
 class Player:
-    def __init__(self, player_number):
+    def __init__(self, player_number, bot):
         self.player_number = player_number
         self.wonder = None
         self.cards = []
@@ -716,7 +722,7 @@ class Player:
         self.play_last_card = False
         self.play_for_free = False
         
-        self.bot = False
+        self.bot = bot
 
     def give_moneys_for_discard(self):
         self.money += 3
@@ -741,8 +747,9 @@ class Player:
 
         if self.has_resources_for_card(card.cost, resource_tuples) and self.money - self.spent_money_l - self.spent_money_r >= card.money_cost:
             return True
-        else:
-            return False
+        if self.play_for_free:
+            return True
+        return False
 
     def can_play_wonder(self):
         resource_tuples = self.available_resources_tuples(self.cards)
@@ -1124,7 +1131,7 @@ class GiveFreeCard(Icon):
         image = pg.image.load("Images/free_card.png")
         super().__init__(image, [54, 50])
 
-    def on_played(current_player, player_list):
+    def on_played(self, current_player, player_list):
         current_player.wonder_action = FreeCard()
 
     def on_next_age(self, player, player_list):
@@ -1209,10 +1216,13 @@ class FreeCard(WonderFunction):
         super().__init__(False)
 
     def on_activated(self, player):
+        print("ACTIVATED")
         if self.active:
+            print("False")
             player.play_for_free = False
             self.active = False
         else:
+            print("True")
             player.play_for_free = True
             self.active = True
 
