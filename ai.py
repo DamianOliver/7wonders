@@ -65,7 +65,8 @@ class Ai:
     def evaluate(self, hand, age):
         print("------------------------------------------")
         best_play_card, play_eval = self.eval_play_cards(hand, age)
-        print(best_play_card.name)
+        if best_play_card:
+            print(best_play_card.name)
         wonder_eval = self.eval_wonder(age)
         if wonder_eval:
             if wonder_eval > play_eval:
@@ -80,15 +81,15 @@ class Ai:
         best_card = None
         best_eval = -99
         for card in hand:
-            if self.player.can_play_card(card) and not self.player.can_play_card(card):
+            if self.player.can_play_card(card):
                 provides_eval = self.eval_play_card(card, age)
                 provides_eval += self.bias_dict[card.card_type]
                 print("{} scored at: {}".format(card.name, provides_eval))
                 if provides_eval > best_eval:
                     best_eval = provides_eval
                     best_card = card
-        if best_card:
-            return best_card, best_eval
+
+        return best_card, best_eval
 
     def eval_play_card(self, card, age):
         eval = card.points
