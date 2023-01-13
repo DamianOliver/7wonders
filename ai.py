@@ -186,6 +186,8 @@ class Ai:
 
 
     def eval_wonder(self, age):
+        if self.player.wonder_level == len(self.player.wonder.layers_list) - 1:
+            return None
         wonder_card = self.player.wonder.layers_list[self.player.wonder_level + 1]
         if self.player.can_play_card(wonder_card):
             provides_eval = self.eval_play_card(wonder_card, age)

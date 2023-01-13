@@ -29,6 +29,7 @@ class Board:
         self.play_wonder = False
         self.all_cards = False
         self.highlight_card_index = -1
+        self.game_over = False
 
     def request_redraw(self):
         self.needs_redraw = True
@@ -70,6 +71,8 @@ class GameController:
             del hand[selected_card_number]
             current_player.give_moneys_for_discard()
             self.on_end_turn()
+            if self.board.game_over:
+                return
             self.game.current_player_finished()
             self.board.discard = False
             self.board.request_redraw()
@@ -89,6 +92,8 @@ class GameController:
                 if wonder_card.icon:
                     wonder_card.icon.on_played(current_player, self.game.players)
                 self.on_end_turn()
+                if self.board.game_over:
+                    return
                 self.game.current_player_finished()
                 self.board.play_wonder = False
                 self.board.request_redraw()
@@ -191,6 +196,8 @@ class GameController:
                     card.icon.on_played(current_player, self.game.players)
                 del hand[selected_card_number]
                 self.on_end_turn()
+                if self.board.game_over:
+                    return
                 self.game.current_player_finished()
                 self.board.request_redraw()
                 if self.game.current_player().bot:
@@ -217,6 +224,8 @@ class GameController:
             if current_player.player_number == len(self.game.players) - 1 and not (current_player.play_last_card and len(self.game.current_player_hand()) == 1):
                 if self.game.age == 3:
                     self.game.end_game()
+                    self.board.game_over = True
+                    print("ITS OVER")
                 else:
                     self.game.next_age()
      
@@ -237,6 +246,12 @@ class GameController:
         self.board.request_redraw()
 
         current_player.current_score = self.game.score_player(current_player)
+
+    def reset_game(self):
+        self.game = Game()
+        self.ai_dict = self.assign_ais()
+        self.board.game_over = False
+
 
     def assign_ais(self):
         player_list = self.game.players
@@ -259,3 +274,36 @@ class GameController:
             self.build_wonder(selected_card_index)
         elif action == "discard":
             self.discard_card(selected_card_index)
+
+    def test_ai(self, num_games):
+        point_total = 0
+        individual_point_total = [0 for i in range(len(self.game.players))]
+        avg_wonder_stages = [0 for i in range(len(self.game.players))]
+        win_totals = [0 for i in range(len(self.game.players))]
+        for i in range(num_games):
+            self.reset_game()
+            self.on_bot_turn()
+            win_index = None
+            best_points = -99
+            for p, player in enumerate(self.game.players):
+                player_score = self.game.score_player(player)
+                individual_point_total[p] += player_score
+                avg_wonder_stages[p] += player.wonder_level
+                point_total += player_score
+                if player_score > best_points:
+                    best_points = player_score
+                    win_index = p
+            print("player number", win_index, "won")
+            win_totals[win_index] += 1
+        point_avg = point_total / num_games / len(self.game.players)
+
+        for i in range(len(individual_point_total)):
+            individual_point_total[i] /= num_games
+            avg_wonder_stages[i] /= num_games
+
+        print("win totals:", win_totals)
+        print("average points:", point_avg)
+        print("individiual point averages:", individual_point_total)
+        print("avg wonder stages:", avg_wonder_stages)
+
+            

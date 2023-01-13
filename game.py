@@ -17,7 +17,7 @@ import pygame as pg
 from enum import Enum
 
 NUM_PLAYERS = 3
-NUM_BOTS = NUM_PLAYERS - 1
+NUM_BOTS = NUM_PLAYERS
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -634,8 +634,8 @@ class Game:
         olympia_b = Wonder("Olympia", pg.image.load("Images/Wonders/olympia_b.png"), olympia_b_card_list)
         olympia = [olympia_a, olympia_b]
 
-        wonder_list = [alexandria, babylon, ghiza, ephesos, rhodos, olympia]
-        random.shuffle(wonder_list)
+        wonder_list = [alexandria, rhodos, ghiza, babylon, ghiza, ephesos, olympia]
+        # random.shuffle(wonder_list)
         return wonder_list
 
         # BUG WITH THE THE DRAWING OF PRETTY MUCH EVERYTHING IN BABYLON B
@@ -1121,7 +1121,7 @@ class PlayLastCard(Icon):
         # 385 / 244
         super().__init__(image, [65, 41])
 
-    def on_played(current_player, player_list):
+    def on_played(self, current_player, player_list):
         # potential bug here where playing this icon as the last card will then allow another card to be played. I think I'm calling that a feature though
         current_player.play_last_card = True
 
