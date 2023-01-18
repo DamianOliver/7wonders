@@ -16,8 +16,8 @@ import random
 import pygame as pg
 from enum import Enum
 
-NUM_PLAYERS = 3
-NUM_BOTS = NUM_PLAYERS
+NUM_PLAYERS = 6
+NUM_BOTS = NUM_PLAYERS - 1
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -635,7 +635,7 @@ class Game:
         olympia = [olympia_a, olympia_b]
 
         wonder_list = [alexandria, rhodos, ghiza, babylon, ghiza, ephesos, olympia]
-        # random.shuffle(wonder_list)
+        random.shuffle(wonder_list)
         return wonder_list
 
         # BUG WITH THE THE DRAWING OF PRETTY MUCH EVERYTHING IN BABYLON B
@@ -645,7 +645,8 @@ class Game:
             if not player.bot:
                 print("You have selected {}!".format(wonder_list[i][0].name))
                 # the 2 length is for debuging and will skip the choosing a side part
-                if len(wonder_list[i]) == 1 or len(wonder_list[i]) == 2:
+                # if len(wonder_list[i]) == 1 or len(wonder_list[i]) == 2:
+                if len(wonder_list[i]) == 1:
                     player.wonder = wonder_list[i][0]
                     continue
                 player_choice = input("Would you like side A or side B? ")
@@ -660,6 +661,7 @@ class Game:
                     player_choice = input("Please enter A or B")
             else:
                 player.wonder = wonder_list[i][random.randrange(0, len(wonder_list[i]))]
+                # player.wonder = wonder_list[i][0]
                     
 
     def left_right_players(self, player):
@@ -741,9 +743,13 @@ class Player:
         resource_tuples = self.available_resources_tuples(self.cards)
 
         for player_card in self.cards:
+            if card.name == player_card.name:
+                return False
+
+        for player_card in self.cards:
             for coupon in player_card.provides_coupons:
                 if coupon == card.name:
-                    return True
+                    return True 
 
         if self.has_resources_for_card(card.cost, resource_tuples) and self.money - self.spent_money_l - self.spent_money_r >= card.money_cost:
             return True
@@ -1159,7 +1165,7 @@ class CopyGuild(Icon):
                     best_score = test_score
                     best_card = card.name
 
-        print("best copy option was", best_card, "giving", best_score, "points")
+        # print("best copy option was", best_card, "giving", best_score, "points")
         return best_score
 
 # dummy icons because I can't be bothered to draw shields, coins, and points on the same card

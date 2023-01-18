@@ -18,6 +18,8 @@ from game import Game
 from ai import Ai
 import pygame as pg
 
+from game import C, R, S
+
 # Controller reacts to events and modifies model (Board)
 
 # Model holds information and logic on how states change
@@ -266,10 +268,17 @@ class GameController:
     def on_bot_turn(self):
         current_player = self.game.current_player()
         ai = self.ai_dict[current_player]
-        selected_card, action = ai.evaluate(self.game.current_player_hand(), self.game.age)
+        selected_card, action, cost = ai.evaluate(self.game.current_player_hand(), self.game.age)
         selected_card_index = self.game.current_player_hand().index(selected_card)
         if action == "play":
             self.select_card(selected_card_index)
+            left_player, right_player = self.game.left_right_players(current_player)
+            left_player.money += cost[0]
+            right_player.money += cost[1]
+            current_player.money -= cost[0] + cost[1]
+            if max(cost) > 0 and max(cost) < 100:
+                print("SOMETHING WAS BOUGHT")
+                print("IN ALL LIKELYHOOD THERE IS NOW A BUG")
         elif action == "wonder":
             self.build_wonder(selected_card_index)
         elif action == "discard":
@@ -280,6 +289,7 @@ class GameController:
         individual_point_total = [0 for i in range(len(self.game.players))]
         avg_wonder_stages = [0 for i in range(len(self.game.players))]
         win_totals = [0 for i in range(len(self.game.players))]
+        bias_totals = [0, 0]
         for i in range(num_games):
             self.reset_game()
             self.on_bot_turn()
@@ -293,17 +303,26 @@ class GameController:
                 if player_score > best_points:
                     best_points = player_score
                     win_index = p
+
             print("player number", win_index, "won")
             win_totals[win_index] += 1
+            winning_ai = self.ai_dict[self.game.players[p]]
+            bias_totals[0] += winning_ai.bias_dict[C.SCIENCE]
+            bias_totals[1] += winning_ai.bias_dict[C.MILITARY]
+
         point_avg = point_total / num_games / len(self.game.players)
 
         for i in range(len(individual_point_total)):
             individual_point_total[i] /= num_games
             avg_wonder_stages[i] /= num_games
 
+        for i in range(len(bias_totals)):
+            bias_totals[i] /= num_games
+
         print("win totals:", win_totals)
         print("average points:", point_avg)
         print("individiual point averages:", individual_point_total)
         print("avg wonder stages:", avg_wonder_stages)
+        print("avg winning biases:", bias_totals)
 
             

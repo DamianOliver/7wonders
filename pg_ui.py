@@ -60,15 +60,16 @@ class PgUi:
         global screen_dimension
 
         # draw initial hand
-        # if not self.game.players[0].bot:
-        #     self.game_view.layout(screen_dimension)
-        #     self.draw_game()
-        #     pg.display.update()
-        # else:
-        #     self.controller.on_bot_turn()
-        # self.run_event_loop()
 
-        self.controller.test_ai(100)
+        if not self.game.players[0].bot:
+            self.game_view.layout(screen_dimension)
+            self.draw_game()
+            pg.display.update()
+        else:
+            self.controller.on_bot_turn()
+        self.run_event_loop()
+
+        # self.controller.test_ai(50)
 
     def run_event_loop(self):
         global screen_dimension
