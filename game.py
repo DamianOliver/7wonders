@@ -17,7 +17,7 @@ import pygame as pg
 from enum import Enum
 
 NUM_PLAYERS = 6
-NUM_BOTS = NUM_PLAYERS
+NUM_BOTS = NUM_PLAYERS - 1
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
