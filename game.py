@@ -17,7 +17,7 @@ import pygame as pg
 from enum import Enum
 
 NUM_PLAYERS = 6
-NUM_BOTS = NUM_PLAYERS - 1
+NUM_BOTS = NUM_PLAYERS
 NUM_CARDS_PER_PLAYER = 7
 NUM_TURNS = NUM_CARDS_PER_PLAYER - 1
 
@@ -177,6 +177,7 @@ class Game:
 
         return total_score
 
+    # TODO - move this out of game class to pure function
     def science_minimax(self, totals_list, science_tuples):
         if not science_tuples:
             return self.score_science(totals_list)
@@ -221,7 +222,7 @@ class Game:
 
     def create_deck(self):
         if self.age == 1:
-            deck = [ \
+            deck = [
                 Card("BATHS", C.CIVIC, points = 3, provides_coupons = ["AQUEDUCT"], cost = [R.STONE], num_players = 3),
                 Card("GLASSWORKS", C.MFG_R, provides_resources = [(R.GLASS,)], num_players = 3),
                 Card("CLAY PIT", C.RAW_R, provides_resources = [(R.BRICK, R.ORE)], money_cost = 1, num_players = 3),
@@ -278,7 +279,7 @@ class Game:
                 ]
 
         elif self.age == 2:
-            deck = [ \
+            deck = [
                 Card("SAWMILL", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,)], money_cost = 1, num_players = 3),
                 Card("FOUNDRY", C.RAW_R, provides_resources = [(R.ORE,), (R.ORE,)], money_cost = 1, num_players = 3),
                 Card("BRICKYARD", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,)], money_cost = 1,num_players = 3),
@@ -335,7 +336,7 @@ class Game:
                 ]
 
         elif self.age == 3:
-            deck = [ \
+            deck = [
                 Card("HAVEN", C.COMMERCIAL, icon = OneGoldPointForRaw(), cost = [R.WOOD, R.ORE, R.SILK], num_players = 3),
                 Card("LIGHTHOUSE", C.COMMERCIAL, icon = OneGoldPointForCommercial(), cost = [R.STONE, R.GLASS], num_players = 3),
                 Card("ARENA", C.COMMERCIAL, icon = ThreeGoldPointForWonder(), cost = [R.STONE, R.STONE, R.ORE], num_players = 3),
@@ -382,7 +383,7 @@ class Game:
                 Card("OBSERVATORY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.ORE, R.ORE, R.GLASS, R.SILK], num_players = 7),
             ]
 
-            guild_list = [ \
+            guild_list = [
                 Card("Workers Guild", C.GUILD, icon = PointForRaw(), cost = [R.ORE, R.ORE, R.BRICK, R.STONE, R.WOOD]),
                 Card("Craftmens Guild", C.GUILD, icon = TwoPointForMfc(), cost = [R.ORE, R.ORE, R.STONE, R.STONE]),
                 Card("Traders Guild", C.GUILD, icon = OnePointForCommercial(), cost = [R.GLASS, R.SILK, R.PAPYRUS]),
@@ -414,8 +415,25 @@ class Game:
         random.shuffle(deck)
         return deck
 
+
+# Commented out create deck functions are for test decks
+
     # def create_deck(self):
-    #     deck = [ \
+    #     deck = [
+    #         Card("CLAY PIT", C.RAW_R, provides_resources = [(R.BRICK, R.ORE)], money_cost = 1, num_players = 3),
+    #         Card("CLAY POOL", C.RAW_R, provides_resources = [(R.BRICK,)], num_players = 3),
+    #         Card("LUMBER YARD", C.RAW_R, provides_resources = [(R.WOOD,)], num_players = 3),
+    #         Card("ORE VEIN", C.RAW_R, provides_resources = [(R.ORE,)], num_players = 3),
+    #         Card("EAST TRADING POST", C.COMMERCIAL, icon = RightRawDiscount(), provides_coupons = ["FORUM"], num_players = 3),
+    #         Card("TIMBER YARD", C.RAW_R, provides_resources = [(R.STONE, R.WOOD)], money_cost = 1, num_players = 3),
+    #         Card("STOCKADE", C.MILITARY, num_shields = 1, cost = [R.WOOD, R.WOOD], num_players = 3),
+    #         Card("BARRACKS", C.MILITARY, num_shields = 1, cost = [R.ORE, R.ORE], num_players = 3),
+    #         ]
+
+    #     return deck
+
+    # def create_deck(self):
+    #     deck = [
     #         Card("Workers Guild", C.GUILD, icon = PointForRaw(), cost = [R.ORE, R.ORE, R.BRICK, R.STONE, R.WOOD]),
     #         Card("Workers Guild", C.GUILD, icon = PointForRaw(), cost = []),
     #         Card("Craftmens Guild", C.GUILD, icon = TwoPointForMfc(), cost = [R.ORE, R.ORE, R.STONE, R.STONE]),
@@ -432,7 +450,7 @@ class Game:
     #     return deck
 
     # def create_deck(self):
-    #     deck = [ \
+    #     deck = [
     #         Card("Scientists Guild", C.GUILD, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = []),
     #         Card("Scientists Guild", C.GUILD, icon = ScienceOptions(), provides_sciences = [(S.TABLET, S.COG, S.COMPASS)], cost = []),
     #         Card("APOTHECARY", C.SCIENCE, provides_sciences = [(S.COMPASS,)], provides_coupons = ["STABLES", "DISPENSARY"], cost = [], num_players = 3),
@@ -445,7 +463,7 @@ class Game:
     #     return deck
 
     # def create_deck(self):
-    #     deck = [ \
+    #     deck = [
     #         Card("Resources", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,), (R.BRICK,), (R.BRICK,)]),
     #         Card("Resources", C.RAW_R, provides_resources = [(R.WOOD,), (R.WOOD,), (R.WOOD,), (R.WOOD,)]),
     #         Card("Resources", C.RAW_R, provides_resources = [(R.STONE,), (R.STONE,), (R.STONE,), (R.STONE,)]),
@@ -462,7 +480,20 @@ class Game:
     #     return deck
 
     # def create_deck(self):
-    #     deck = [ \
+    #     deck = [
+    #         Card("Resources 1", C.RAW_R, provides_resources = [(R.BRICK, R.ORE)]),
+    #         Card("Resources 2", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,)]),
+    #         Card("Resources 3", C.RAW_R, provides_resources = [(R.STONE,)]),
+    #         Card("Resources 4", C.RAW_R, provides_resources = [(R.BRICK, R.ORE)]),
+    #         Card("Resources 5", C.RAW_R, provides_resources = [(R.BRICK,), (R.BRICK,)]),
+    #         Card("Resources 6", C.RAW_R, provides_resources = [(R.STONE,)]),
+    #         Card("Resources 7", C.RAW_R, provides_resources = [(R.WOOD,)]),
+    #         ]
+
+    #     return deck
+
+    # def create_deck(self):
+    #     deck = [
     #         Card("Alexandria Start A", C.WONDER_START, provides_resources = [(R.GLASS,)]), 
     #         Card("Alexandria One", C.WONDER_C, points = 3, cost = [R.STONE, R.STONE]), 
     #         Card("Alexandria Two", C.WONDER_C, provides_resources = [(R.BRICK, R.ORE, R.WOOD, R.STONE)], cost = [R.ORE, R.ORE]), 
@@ -507,16 +538,6 @@ class Game:
 
     #     return deck
 
-    # def create_deck(self):
-    #     deck = [ \
-    #         Card("Golden Shield", C.WONDER_C, num_shields = 1, provides_money = 5, cost = [R.WOOD]),
-    #         Card("Golden Shields", C.WONDER_C, num_shields = 2, provides_money = 5, cost = [R.WOOD]),
-    #         Card("Golden Points", C.WONDER_C, points = 2, provides_money = 4, cost = [R.WOOD]),
-    #         Card("Pointy Shields", C.WONDER_C, points = 2, num_shields = 2, cost = [R.WOOD]),
-    #         ]
-
-    #     return deck
-
     def create_hands(self, deck):
         hands = []
         for i in range(NUM_PLAYERS):
@@ -547,6 +568,7 @@ class Game:
             player.current_score = self.score_player(player)
             if player.current_score > best_score:
                 winners = [player.player_number]
+                best_score = player.current_score
             elif player.current_score == best_score:
                 winners.append(player.player_number)
         if len(winners) == 1:
@@ -556,7 +578,7 @@ class Game:
             print("List of winners: ")
             print("--------")
             for winner in winners:
-                print(winner.player_number)
+                print(winner)
             print("--------")
 
 
@@ -634,7 +656,7 @@ class Game:
         olympia_b = Wonder("Olympia", pg.image.load("Images/Wonders/olympia_b.png"), olympia_b_card_list)
         olympia = [olympia_a, olympia_b]
 
-        wonder_list = [alexandria, rhodos, ghiza, babylon, ghiza, ephesos, olympia]
+        wonder_list = [alexandria, rhodos, babylon, ghiza, ephesos, olympia]
         random.shuffle(wonder_list)
         return wonder_list
 
@@ -644,8 +666,11 @@ class Game:
         for i, player in enumerate(self.players):
             if not player.bot:
                 print("You have selected {}!".format(wonder_list[i][0].name))
+                # first one is for debug to always give player the desired wonder
                 # the 2 length is for debuging and will skip the choosing a side part
                 # if len(wonder_list[i]) == 1 or len(wonder_list[i]) == 2:
+                # player.wonder = wonder_list[5][1]
+                # continue
                 if len(wonder_list[i]) == 1:
                     player.wonder = wonder_list[i][0]
                     continue
@@ -729,8 +754,8 @@ class Player:
     def give_moneys_for_discard(self):
         self.money += 3
 
-    def play_card(self, selected_card):
-        if self.can_play_card(selected_card):
+    def play_card(self, selected_card, can_play = False):
+        if self.can_play_card(selected_card) or can_play:
             self.money -= selected_card.money_cost
             self.num_shields += selected_card.num_shields
             self.money += selected_card.provides_money
@@ -1055,8 +1080,8 @@ class StuffForWonderStage(Icon):
         self.provides = provides
         super().__init__(image, size)
 
-    def on_played(self, current_player, player_list):
-        left_player, right_player = self.left_right_players(current_player, player_list)
+    def total(self, player, player_list):
+        left_player, right_player = self.left_right_players(player, player_list)
         total = 0
 
         if "left" in self.directions:
@@ -1066,9 +1091,15 @@ class StuffForWonderStage(Icon):
             total += right_player.wonder_level
 
         if "down" in self.directions:
-            total += current_player.wonder_level
+            total += player.wonder_level
 
-        current_player.money += total * self.provides[0]
+        return total
+
+    def on_played(self, current_player, player_list):
+        current_player.money += self.total(current_player, player_list) * self.provides[0]
+
+    def score(self, player, player_list):
+        return self.total(player, player_list) * self.provides[1]
 
 class ThreeGoldPointForWonder(StuffForWonderStage):
     def __init__(self):
@@ -1090,7 +1121,7 @@ class StuffForMilitaryTokens(Icon):
         self.token_type = token_type
         super().__init__(image, size)
 
-    def score(self, player, player_list):
+    def total(self, player, player_list):
         left_player, right_player = self.left_right_players(player, player_list)
         total = 0
         if "left" in self.directions:
@@ -1105,7 +1136,10 @@ class StuffForMilitaryTokens(Icon):
             if token == self.token_type:
                 total += 1
 
-        return total * self.provides[1]
+        return total
+
+    def score(self, player, player_list):
+        return self.total(player, player_list) * self.provides[1]
 
 class LeftRightPointForMinusTokens(StuffForMilitaryTokens):
     def __init__(self):
@@ -1159,10 +1193,9 @@ class CopyGuild(Icon):
         
         for card in neighbor_cards:
             if card.card_type == C.GUILD:
-                current_player.cards.append(card)
-                test_score = Game().score_player(current_player)
-                if test_score > best_score:
-                    best_score = test_score
+                score = card.icon.score(current_player, player_list)
+                if score > best_score:
+                    best_score = score
                     best_card = card.name
 
         # print("best copy option was", best_card, "giving", best_score, "points")

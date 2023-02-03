@@ -80,13 +80,15 @@ class GameController:
             self.board.request_redraw()
             if self.game.current_player().bot:
                 self.on_bot_turn()
+            else:
+                self.ai_debugs()
             
 
     def build_wonder(self, selected_card_number):
         if not self.board.all_cards:
             current_player = self.game.current_player()
             wonder_card = current_player.wonder.layers_list[current_player.wonder_level + 1]
-            if current_player.play_card(wonder_card):
+            if current_player.play_card(wonder_card) or current_player.bot:
                 hand = self.game.current_player_hand()
                 del hand[selected_card_number]
                 current_player.wonder_level += 1
@@ -101,6 +103,8 @@ class GameController:
                 self.board.request_redraw()
                 if self.game.current_player().bot:
                     self.on_bot_turn()
+                else:
+                    self.ai_debugs()
 
     def on_discard_button_pressed(self):
         if not self.board.all_cards:
@@ -193,7 +197,11 @@ class GameController:
             card = hand[selected_card_number]
             selected_card = card
 
-            if current_player.play_card(selected_card) or current_player.play_for_free:
+            # WARNING TO FUTURE SELF: BOT IGNORES CAN PLAY FUNCTION - ANY AI LOGIG BUG WILL ALLOW IT TO PLAY CARDS FOR FREE
+            can_play = False
+            if current_player.bot:
+                can_play = True
+            if current_player.play_card(selected_card, can_play) or current_player.play_for_free:
                 if card.icon:
                     card.icon.on_played(current_player, self.game.players)
                 del hand[selected_card_number]
@@ -204,6 +212,8 @@ class GameController:
                 self.board.request_redraw()
                 if self.game.current_player().bot:
                     self.on_bot_turn()
+                else:
+                    self.ai_debugs()
 
     def on_all_cards_button_pressed(self):
         if not self.board.all_cards:
@@ -215,14 +225,23 @@ class GameController:
         self.board.all_cards = False
         self.board.request_redraw()
 
+    def assert_wonders(self, current_player):
+        stages = current_player.wonder.layers_list
+        stage_set = set(stages)
+        if len(stages) != len(stage_set):
+            print("uh oh")
+
     def on_end_turn(self):
         current_player = self.game.current_player()
+
+        self.assert_wonders(current_player)
+
         left_player, right_player = self.game.left_right_players(current_player)
         current_player.money += (-current_player.spent_money_l - current_player.spent_money_r)
         left_player.money += current_player.spent_money_l
         right_player.money += current_player.spent_money_r
 
-        if len(self.game.current_player_hand()) <= 1:              
+        if len(self.game.current_player_hand()) <= 1:
             if current_player.player_number == len(self.game.players) - 1 and not (current_player.play_last_card and len(self.game.current_player_hand()) == 1):
                 if self.game.age == 3:
                     self.game.end_game()
@@ -249,7 +268,11 @@ class GameController:
 
         current_player.current_score = self.game.score_player(current_player)
 
+        if current_player.money < 0:
+            print("uh oh")
+
     def reset_game(self):
+        print("reset function")
         self.game = Game()
         self.ai_dict = self.assign_ais()
         self.board.game_over = False
@@ -260,8 +283,9 @@ class GameController:
 
         ais = {}
         for player in player_list:
-            if player.bot:
-                ais[player] = Ai(player, self.game.players)
+            # commented out for debuggging to test ai on human player
+            # if player.bot:
+            ais[player] = Ai(player, self.game.players)
 
         return ais
 
@@ -276,21 +300,33 @@ class GameController:
             left_player.money += cost[0]
             right_player.money += cost[1]
             current_player.money -= cost[0] + cost[1]
-            if max(cost) > 0 and max(cost) < 100:
-                print("SOMETHING WAS BOUGHT")
-                print("IN ALL LIKELYHOOD THERE IS NOW A BUG")
         elif action == "wonder":
             self.build_wonder(selected_card_index)
         elif action == "discard":
             self.discard_card(selected_card_index)
+
+    def ai_debugs(self):
+        print()
+        print()
+        print("PLAYER DEBUG")
+        current_player = self.game.current_player()
+        if not current_player.bot:
+            ai = self.ai_dict[current_player]
+            # for printing
+            selected_card, action, cost = ai.evaluate(self.game.current_player_hand(), self.game.age)
+        print()
 
     def test_ai(self, num_games):
         point_total = 0
         individual_point_total = [0 for i in range(len(self.game.players))]
         avg_wonder_stages = [0 for i in range(len(self.game.players))]
         win_totals = [0 for i in range(len(self.game.players))]
+        wonder_wins = {}
         bias_totals = [0, 0]
+        best_score = 0
+        winning_avg = 0
         for i in range(num_games):
+            print("reseting")
             self.reset_game()
             self.on_bot_turn()
             win_index = None
@@ -303,9 +339,21 @@ class GameController:
                 if player_score > best_points:
                     best_points = player_score
                     win_index = p
+                    if best_points > best_score:
+                        best_score = best_points
+                        best_cards = self.game.players[win_index].cards
+                        
 
-            print("player number", win_index, "won")
+            print("player number", win_index, "won with", best_points)
+            print("Player number {} won game {} with a score of {}".format(win_index, i, best_points))
+            winner = self.game.players[win_index]
             win_totals[win_index] += 1
+            winning_wonder = winner.wonder.name
+            winning_avg += best_points
+            if winning_wonder in wonder_wins:
+                wonder_wins[winning_wonder] += 1
+            else:
+                wonder_wins[winning_wonder] = 1
             winning_ai = self.ai_dict[self.game.players[p]]
             bias_totals[0] += winning_ai.bias_dict[C.SCIENCE]
             bias_totals[1] += winning_ai.bias_dict[C.MILITARY]
@@ -319,10 +367,21 @@ class GameController:
         for i in range(len(bias_totals)):
             bias_totals[i] /= num_games
 
+        winning_avg /= num_games
+
+        print()
         print("win totals:", win_totals)
         print("average points:", point_avg)
         print("individiual point averages:", individual_point_total)
         print("avg wonder stages:", avg_wonder_stages)
         print("avg winning biases:", bias_totals)
+        print("single highest score of", best_score)
+        print("Average winning score of", winning_avg)
+        print(wonder_wins)
+
+        print()
+        print("best card list:")
+        print("--------------------")
+        [print(card.name) for card in best_cards]
 
             

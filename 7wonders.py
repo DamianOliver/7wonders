@@ -19,3 +19,12 @@ from pg_ui import *
 if __name__ == "__main__":
     PgUi().play()
     # CmdUi().play()
+
+
+
+# NOTES:
+
+# Recorded Bugs (by me):
+
+# negative money
+# duplicated wonder stages

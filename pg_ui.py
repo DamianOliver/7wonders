@@ -61,15 +61,15 @@ class PgUi:
 
         # draw initial hand
 
-        if not self.game.players[0].bot:
-            self.game_view.layout(screen_dimension)
-            self.draw_game()
-            pg.display.update()
-        else:
-            self.controller.on_bot_turn()
-        self.run_event_loop()
+        # if not self.game.players[0].bot:
+        #     self.game_view.layout(screen_dimension)
+        #     self.draw_game()
+        #     pg.display.update()
+        # else:
+        #     self.controller.on_bot_turn()
+        # self.run_event_loop()
 
-        # self.controller.test_ai(50)
+        self.controller.test_ai(100)
 
     def run_event_loop(self):
         global screen_dimension
@@ -89,9 +89,6 @@ class PgUi:
                 elif event.type == pg.QUIT:
                     pg.quit()
                     return
-                # elif event.type == pg.WINDOWEVENT and event.__dict__["event"] == pg.WINDOWEVENT_CLOSE:
-                #     pg.quit()
-                #     return
                 elif event.type == pg.VIDEORESIZE:
                     screen_dimension = pg.display.get_surface().get_size()
                     self.game_view.layout(screen_dimension)

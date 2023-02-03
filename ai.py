@@ -1,6 +1,13 @@
-from game import C, R, S
+from game import *
 
 import random as rand
+
+# TO DO:
+
+    # obviously also teach the ai what all the most important cards in the game do... or at least what they're worth
+
+
+
 
 class Ai:
     def __init__(self, player, players):
@@ -18,58 +25,68 @@ class Ai:
             C.WONDER_C: 3,
         }
 
+        self.resource_values_dict = {
+            1 : 1,
+            2 : 0.75,
+            3 : 0.67,
+            4 : 0.6,
+        }
+
         self.order_list = [C.SCIENCE, C.SCIENCE, C.SCIENCE, C.MILITARY, C.MILITARY, C.MILITARY]
         rand.shuffle(self.order_list)
 
         self.set_bias_from_wonder()
 
+        if self.player.player_number < 3:
+            self.type = 1
+        else:
+            self.type = 2
+
     def set_bias_from_wonder(self):
-        # for testing
-        # self.bias_dict[self.order_list[self.player.player_number]] = 6
-        return
+        if self.player.wonder.name == "Alexandria":
+            if rand.randint(1, 2) == 2:
+                # science focus
+                self.bias_dict[C.SCIENCE] = 4
+                self.bias_dict[C.MFG_R] = 3
+            else:
+                # military/civic focus
+                self.bias_dict[C.MILITARY] = 3
+                self.bias_dict[C.RAW_R] = 3
+                self.bias_dict[C.CIVIC] = 0
+                self.bias_dict[C.MFG_R] = -2
+            self.bias_dict[C.COMMERCIAL] = 2
 
+        elif self.player.wonder.name == "Babylon":
+            self.bias_dict[C.SCIENCE] = 4
+            self.bias_dict[C.MFG_R] = 3
 
-    # def set_bias_from_wonder(self):
-    #     if self.player.wonder.name == "Alexandria":
-    #         if rand.randint(1, 2) == 2:
-    #             # science focus
-    #             self.bias_dict[C.SCIENCE] = 4
-    #             self.bias_dict[C.MFG_R] = 3
-    #         else:
-    #             # military/civic focus
-    #             self.bias_dict[C.MILITARY] = 3
-    #             self.bias_dict[C.RAW_R] = 3
-    #             self.bias_dict[C.CIVIC] = 1
-    #         self.bias_dict[C.COMMERCIAL] = 2
+        elif self.player.wonder.name == "Ghiza":
+            self.bias_dict[C.RAW_R] = 1.5
+            self.bias_dict[C.MFG_R] = -1.5
+            self.bias_dict[C.CIVIC] = 0
+            self.bias_dict[C.MILITARY] = 2
+            self.bias_dict[C.WONDER_C] = 0
 
-    #     elif self.player.wonder.name == "Babylon":
-    #         self.bias_dict[C.SCIENCE] = 4
-    #         self.bias_dict[C.MFG_R] = 3
+        elif self.player.wonder.name == "Ephesos":
+            self.bias_dict[C.RAW_R] = -1
+            self.bias_dict[C.MFG_R] = -1
 
-    #     elif self.player.wonder.name == "Ghiza":
-    #         self.bias_dict[C.RAW_R] = 3
-    #         self.bias_dict[C.CIVIC] = 3
-    #         self.bias_dict[C.MILITARY] = 2
+            if rand.randint(1, 2) == 2:
+                self.bias_dict[C.SCIENCE] = 4
+                self.bias_dict[C.RAW_R] = -2
 
-    #     elif self.player.wonder.name == "Ephesos":
-    #         # ephesos is kinda screwed until buying resources becomes a thing
-    #         #   - granted they're all screwed until building wonders becomes a thing
-    #         self.bias_dict[C.RAW_R] = -1
-    #         self.bias_dict[C.MFG_R] = -1
+        elif self.player.wonder.name == "Rhodos":
+            self.bias_dict[C.MILITARY] = 2
+            self.bias_dict[C.RAW_R] = 2
+            self.bias_dict[C.SCIENCE] = -2
+            self.bias_dict[C.MFG_R] = -2
 
-    #         if rand.randint(1, 2) == 2:
-    #             self.bias_dict[C.SCIENCE] = 4
-
-    #     elif self.player.wonder.name == "Rhodos":
-    #         self.bias_dict[C.MILITARY] = 5
-    #         self.bias_dict[C.RAW_R] = 2
-    #         self.bias_dict[C.SCIENCE] = -2
-
-    #     elif self.player.wonder == "Olympia":
-    #         if rand.randint(1, 2) == 2:
-    #             self.bias_dict[C.SCIENCE] = 4
-    #         else:
-    #             self.bias_dict[C.SCIENCE] = -2
+        elif self.player.wonder == "Olympia":
+            if rand.randint(1, 2) == 2:
+                self.bias_dict[C.SCIENCE] = 4
+            else:
+                self.bias_dict[C.SCIENCE] = -2
+                self.bias_dict[C.MFG_R] = -2
 
     def evaluate(self, hand, age):
         print("------------------------------------------")
@@ -77,14 +94,14 @@ class Ai:
         best_play_card = play_card_cost[0]
         play_cost = play_card_cost[1]
         if best_play_card:
-            print(best_play_card.name)
+            print(best_play_card.name, "with eval of", play_eval)
         wonder_eval, wonder_cost = self.eval_wonder(age)
         if wonder_eval:
             if wonder_eval > play_eval:
                 return hand[0], "wonder", wonder_cost
         if best_play_card:
             return best_play_card, "play", play_cost
-        
+
         print("discarding")
         return hand[0], "discard", [0, 0]
 
@@ -93,11 +110,10 @@ class Ai:
         best_eval = -99
         for card in hand:
             cost = self.calc_purchase(card)
-            if cost[0] < 100 and cost[0] + cost[1] <= self.player.money:
+            if cost[0] < 100 and cost[0] + cost[1] + card.money_cost <= self.player.money and not self.is_in_cards(card, self.player.cards):
                 provides_eval = self.eval_play_card(card, age)
-                provides_eval += self.eval_money(-(cost[0] + cost[1]))
-                print("cost eval:", -(cost[0] + cost[1]))
-                provides_eval += self.bias_dict[card.card_type]
+                provides_eval += self.eval_money(-(cost[0] + cost[1] + card.money_cost))
+                print("v cost {} - {} evaluated at - {} v".format(cost, card.money_cost, -(cost[0] + cost[1] + card.money_cost)))
                 print("{} scored at: {}".format(card.name, provides_eval))
                 if provides_eval > best_eval:
                     best_eval = provides_eval
@@ -105,44 +121,89 @@ class Ai:
 
         return best_card, best_eval
 
+    def is_in_cards(self, card, cards):
+        for player_card in cards:
+            if card.name == player_card.name:
+                return True
+
     def eval_play_card(self, card, age):
         eval = card.points
         if len(card.provides_resources) > 0:
             eval += self.eval_resources(card)
         if card.num_shields > 0:
             eval += self.eval_shields(card, age)
+            eval += self.bias_dict[C.MILITARY]
         if len(card.provides_sciences) > 0:
             eval += self.eval_science(card, age)
+            eval += self.bias_dict[C.SCIENCE]
         if card.provides_money > 0:
             eval += self.eval_money(card.provides_money)
+        if card.icon:
+            eval += self.eval_icon(card.icon)
 
         return eval
 
     def eval_resources(self, card):
-        # basic start - add individual resource preferences especially for different biases as well as for wonder, ect.
-        eval = -1
+        # FIGURE OUT WHY EITHER OR RESOURCE CARDS SCORE LOWER - PROBABLY MAKE A TEST DECK OR SOMETHING
+        current_resource_tuples = self.player.available_resources_tuples(self.player.cards)
+        resource_totals = self.sum_resources(current_resource_tuples)
+        added_value = 0
         for resource_tuple in card.provides_resources:
-            eval += len(resource_tuple) / 2 + 1/2
+            for resource in resource_tuple:
+                if resource.is_raw():
+                    if resource not in resource_totals:
+                        added_value += self.resource_values_dict[len(resource_tuple)] * 2
+                    else:
+                        added_value += max(self.resource_values_dict[len(resource_tuple)] * 2 - resource_totals[resource], 0)
 
-        current_resources = self.player.available_resources_tuples(self.player.cards)
-        # print("cp", current_resources, "-", card.provides_resources[0])
-        if card.provides_resources not in current_resources:
-            eval += 3
-        elif card.card_type == C.MFG_R:
-            eval -= 6
+                else:
+                    if resource not in resource_totals:
+                        added_value += self.resource_values_dict[len(resource_tuple)]
+                    else:
+                        # -3 because duplicate manufactored resource cards is really dumb
+                        added_value += max(self.resource_values_dict[len(resource_tuple)] - resource_totals[resource], 0) - 3
+        if card.card_type == C.RAW_R:
+            added_value += self.bias_dict[C.RAW_R]
+            return added_value * 2
+        else:
+            added_value += self.bias_dict[C.MFG_R]
+            return added_value * 3
 
-        return eval
+    def sum_resources(self, resource_tuples):
+        resource_totals = {}
+        for resource_tuple in resource_tuples:
+            for resource in resource_tuple:
+                if resource not in resource_totals:
+                    resource_totals[resource] = self.resource_values_dict[len(resource_tuple)]
+                else:
+                    resource_totals[resource] += self.resource_values_dict[len(resource_tuple)]
+        return resource_totals
 
     def eval_shields(self, card, age):
-        # add smarter calculations based on age, total number of military cards, direction of passing, etc.
         eval = 0
         left_player, right_player = self.left_right_players(self.player)
-        left_difference = (self.player.num_shields - left_player.num_shields - 1) / card.num_shields
-        right_difference = (self.player.num_shields - right_player.num_shields - 1) / card.num_shields
-        eval += 2 - abs(left_difference) * (2 * age - 1)
-        eval += 2 - abs(right_difference) * (2 * age - 1)
-
+        eval += self.shield_compare(self.player, left_player, card, age)
+        eval += self.shield_compare(self.player, right_player, card, age)
+        eval /= 2
         return eval
+
+    def shield_compare(self, player, compare_player, card, age):
+        prior_difference = player.num_shields - compare_player.num_shields
+        shield_difference = (player.num_shields + card.num_shields) - compare_player.num_shields
+        if prior_difference <= 0:
+            if shield_difference > 0:
+                return 2 * age - 1
+            elif shield_difference == 0:
+                return 2 * age - 2
+            elif shield_difference < age:
+                return age
+            return 0
+        else:
+            if prior_difference < age:
+                return age + 1
+            else:
+                return age
+
 
     def eval_science(self, card, age):
         # WARNING - DOES NOT WORK FOR MULTIPLE SCIENCE TUPLES
@@ -150,11 +211,7 @@ class Ai:
         eval = 3 - age
         totals_list = self.total_science()
         print(card.provides_sciences)
-        if len(card.provides_sciences) > 1:
-            print("big science boy")
-            pass
-        else:
-            science = card.provides_sciences[0][0]
+        science = card.provides_sciences[0][0]
 
         if science == S.COG:
             science_index = 0
@@ -162,6 +219,9 @@ class Ai:
             science_index = 1
         elif science == S.TABLET:
             science_index = 2
+
+        if len(card.provides_sciences) > 1:
+            science_index = totals_list.index(min(totals_list))
 
         bias_multiplier = 3
 
@@ -171,16 +231,68 @@ class Ai:
     
         return eval
 
+    def eval_icon(self, icon):
+        left_player, right_player = self.left_right_players(self.player)
+        if isinstance(icon, DiscountIcon):
+            # obviously should eventually take into account missing resources once that becomes a thing
+            # also this value will likely need to be adjusted
+            if icon.direction == "right":
+                compare_players = [right_player]
+            elif icon.direction == "left":
+                compare_players = [left_player]
+            else:
+                compare_players = [left_player, right_player]
+            total_cards = 0
+            for player in compare_players:
+                total_cards += self.sum_card_type(player, C.RAW_R)
+            
+            if icon.type == C.MFG_R:
+                if self.sum_card_type(player, C.MFG_R) > 1:
+                    return 1
+            
+            return 3.5
+
+        elif isinstance(icon, StuffPerCard):
+            # needs to updated to include future expectations though that isn't a huge deal
+            compare_players = []
+            if "right" in icon.directions:
+                compare_players.append(right_player)
+            if "left" in icon.directions:
+                compare_players.append(left_player)
+            if "down" in icon.directions:
+                compare_players.append(self.player)
+
+            total_cards = 0
+            for player in compare_players:
+                total_cards += self.sum_card_type(player, icon.card_type)
+
+            card_eval = total_cards * icon.provides[1]
+            card_eval += self.eval_money(total_cards * icon.provides[0])
+            return card_eval
+
+        elif isinstance(icon, StuffForWonderStage):
+            total = icon.total(self.player, self.players)
+            card_eval = total * icon.provides[1]
+            card_eval += self.eval_money(total * icon.provides[0])
+            return card_eval
+
+        elif isinstance(icon, StuffForMilitaryTokens):
+            total = icon.total(self.player, self.players)
+            card_eval = total * icon.provides[1]
+            return card_eval
+
+        elif isinstance(icon, CopyGuild):
+            return icon.score(self.player, self.players)
+
+        return 0
+
     def eval_money(self, money_num):
         # add some fancy equation with bias when money low
         if self.player.money < 3:
-            return money_num / 2
+            return money_num / 1.5
         else:
             return money_num * 2 / 5
 
-# 6 - 2 -> 1
-# c - diff
-# 5 - (6- 2)
 
     def total_science(self):
         totals_list = [0, 0, 0, 0]
@@ -221,7 +333,12 @@ class Ai:
         if cost[0] < 100 and cost[0] + cost[1] <= self.player.money:
             provides_eval = self.eval_play_card(wonder_card, age)
             provides_eval += self.bias_dict[C.WONDER_C]
-            provides_eval += self.eval_money(cost[0] + cost[1])
+            money_cost = self.eval_money(-(cost[0] + cost[1]))
+            provides_eval += money_cost
+            print()
+            print("v eval decreased by", money_cost, "with cost of", cost)
+            print("Wonder stage", self.player.wonder_level + 1, "evaluated at", provides_eval)
+            
             return provides_eval, cost
         return None, [0, 0]
     
@@ -242,60 +359,71 @@ class Ai:
                 needed_resources.append(new_cost)
 
     def calc_purchase(self, card):
+        if self.player.can_play_card(card):
+            return (0, 0)
         left_player, right_player = self.left_right_players(self.player)
-        left_resources = left_player.available_resources_tuples(self.player.cards)
-        right_resources = right_player.available_resources_tuples(self.player.cards)
-        needed_resources = card.cost
-        # need to deal with needed resources
-        # they need to exclude player resources
-        # fun
-        best_cost = self.recursive_calc(left_resources, right_resources, needed_resources, [0, 0])
-        print("_____________________")
-        print("left:", left_resources)
-        print("right:", right_resources)
-        print("needed resources:", needed_resources)
-        print("best_cost:", best_cost)
-        print("_____________________")
+        left_resources = self.availble_buy_resources(left_player.cards)
+        right_resources = right_player.available_resources_tuples(right_player.cards)
+        either_or_resources = []
+        needed_resources = card.cost.copy()
+        for resource_tuple in self.player.available_resources_tuples(self.player.cards):
+            if len(resource_tuple) == 1:
+                if resource_tuple[0] in needed_resources:
+                    needed_resources.remove(resource_tuple[0])
+            else:
+                either_or_resources.append(resource_tuple)
+
+        best_cost = self.recursive_calc(either_or_resources, left_resources, right_resources, needed_resources, [0, 0])
         return best_cost
 
+    def availble_buy_resources(self, cards):
+        resource_tuples = []
+        for card in cards:
+            # maybe can just use in and a list? less efficient but cleaner
+            if card.card_type == C.RAW_R or card.card_type == C.MFG_R or card.card_type == C.WONDER_START:
+                for resource_tuple in card.provides_resources:
+                    resource_tuples.append(resource_tuple)
+        return resource_tuples
 
-    def recursive_calc(self, left_resources, right_resources, needed_resources, cost):
+
+    def recursive_calc(self, either_or_resources, left_resources, right_resources, needed_resources, cost):
         cost_list = []
-        print("needed resources, cost:", needed_resources, cost)
+        # print("needed resources, cost:", needed_resources, cost)
         if len(needed_resources) == 0:
-            print("it actually got used")
             return cost
+        for resource_tuple in either_or_resources:
+            for resource in resource_tuple:
+                if resource in needed_resources:
+                    new_either_or_resources = either_or_resources.copy()
+                    new_either_or_resources.remove(resource_tuple)
+                    new_needed_resources = needed_resources.copy()
+                    new_needed_resources.remove(resource)
+                    cost_list.append(self.recursive_calc(new_either_or_resources, left_resources, right_resources, new_needed_resources, cost))
         for resource_tuple in left_resources:
             for resource in resource_tuple:
-                if (resource,) in needed_resources:
+                if resource in needed_resources:
                     new_left_resources = left_resources.copy()
                     new_left_resources.remove(resource_tuple)
                     new_needed_resources = needed_resources.copy()
-                    new_needed_resources.remove((resource,))
+                    new_needed_resources.remove(resource)
                     added_cost = self.calc_resources_cost("left", resource)
                     new_cost = (cost[0] + added_cost, cost[1])
-                    cost_list.append(self.recursive_calc(new_left_resources, right_resources, new_needed_resources, new_cost))
+                    cost_list.append(self.recursive_calc(either_or_resources, new_left_resources, right_resources, new_needed_resources, new_cost))
         for resource_tuple in right_resources:
             for resource in resource_tuple:
-                if (resource,) in needed_resources:
+                if resource in needed_resources:
                     new_right_resources = right_resources.copy()
                     new_right_resources.remove(resource_tuple)
                     new_needed_resources = needed_resources.copy()
-                    new_needed_resources.remove((resource,))
+                    new_needed_resources.remove(resource)
                     added_cost = self.calc_resources_cost("right", resource)
                     new_cost = (cost[0], cost[1] + added_cost)
-                    cost_list.append(self.recursive_calc(left_resources, new_right_resources, new_needed_resources, new_cost))
+                    cost_list.append(self.recursive_calc(either_or_resources, left_resources, new_right_resources, new_needed_resources, new_cost))
         
-        # if len(left_resources) == 0 and len(right_resources) == 0:
-        #     print("no more resources")
-        #     return [999, 999]
-        
-        best_cost_val = 99999
         best_cost = [999, 999]
-        print("cost list:", cost_list)
+        # print("cost list:", cost_list)
         for cost_val in cost_list:
-            if (cost_val[0] + cost_val[1]) < best_cost_val:
-                best_cost_val = cost_val[0] + cost_val[1]
+            if (cost_val[0] + cost_val[1]) < best_cost[0] + best_cost[1]:
                 best_cost = cost_val
         return best_cost
         
@@ -322,6 +450,13 @@ class Ai:
             right_player = self.players[player_index + 1]
 
         return left_player, right_player
+
+    def sum_card_type(self, player, card_type):
+        total = 0
+        for card in player.cards:
+            if card.card_type == card_type:
+                total += 1
+        return total
 
     def eval_discard(self, player):
         # really just a placeholder for now
