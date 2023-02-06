@@ -754,8 +754,8 @@ class Player:
     def give_moneys_for_discard(self):
         self.money += 3
 
-    def play_card(self, selected_card, can_play = False):
-        if self.can_play_card(selected_card) or can_play:
+    def play_card(self, selected_card, override = False):
+        if self.can_play_card(selected_card) or override:
             self.money -= selected_card.money_cost
             self.num_shields += selected_card.num_shields
             self.money += selected_card.provides_money

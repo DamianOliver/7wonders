@@ -1432,6 +1432,18 @@ class AllCardsView(View):
         self.player_index = self.game.current_player_index
         self.bottom_right = []
 
+        self.order_dict = {
+            C.WONDER_START : 0,
+            C.WONDER_C : 1,
+            C.RAW_R : 2,
+            C.MFG_R : 3,
+            C.COMMERCIAL : 4,
+            C.MILITARY : 5,
+            C.CIVIC : 6,
+            C.SCIENCE : 7,
+            C.GUILD : 8
+        }
+
     def layout(self, screen_dimension):
         self.background_size = (screen_dimension[0], screen_dimension[1])
         self.num_per_row = self.calc_num_per_row(screen_dimension)
@@ -1449,44 +1461,27 @@ class AllCardsView(View):
             pg.draw.rect(screen, (BACKRGOUND_COLOR), (self.location, self.background_size))
             player = self.game.players[self.player_index]
             self.draw_wonder_cards(player)
-            order_list = [C.WONDER_START, C.WONDER_C, C.RAW_R, C.MFG_R, C.COMMERCIAL, C.MILITARY, C.CIVIC, C.SCIENCE, C.GUILD]
-            num_drawn = -1
-            wonders_drawn = -1
+            player.cards.sort(key = lambda card: self.order_dict[card.card_type])
 
-            num_drawn = -1
-            for current_card_type in order_list:
-                for i in range(len(player.cards)):
-                    card = player.cards[i]
-                    if card.card_type == current_card_type:
-                        num_drawn += 1
+            for i, card in enumerate(player.cards[:player.wonder_level+1]):
+                card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((i / self.num_per_row))))
+                self.draw_card(card, card_location)
 
-                        if num_drawn != 0:
-                            card_location = [ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (num_drawn % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((num_drawn / self.num_per_row)) + 1)]
-                            # print("i: ", i, "num per row: ", self.num_per_row, "%: ", i % self.num_per_row)
-                        else:
-                            card_location = [ALL_CARDS_MARGIN[0], ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING * 2 + ALL_CARDS_SIZE[1]]
-
-                        if card.card_type == C.WONDER_C or card.card_type == C.WONDER_START:
-                            wonders_drawn += 1
-                            num_drawn -= 1
-
-                            card_location[1] -= ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING
-                            card_location[0] += (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * wonders_drawn
-                            
-                        self.draw_card(card, card_location)
+            for i, card in enumerate(player.cards[player.wonder_level+1:]):
+                # non wonders have the +1 at the end
+                card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((i / self.num_per_row)) + 1))
+                self.draw_card(card, card_location)
+                
                         
             self.draw_tokens()
             self.draw_button()
 
     def draw_wonder_cards(self, player):
         for i, card in enumerate(player.wonder.layers_list):
-            # print("drawing", card)
             if i != 0:
                 card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((i / self.num_per_row))))
             else:
                 card_location = (ALL_CARDS_MARGIN[0], ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING)
-
-            # print("card location:", card_location)
 
             self.draw_card(card, card_location)
 

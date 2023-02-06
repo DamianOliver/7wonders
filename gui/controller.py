@@ -88,7 +88,7 @@ class GameController:
         if not self.board.all_cards:
             current_player = self.game.current_player()
             wonder_card = current_player.wonder.layers_list[current_player.wonder_level + 1]
-            if current_player.play_card(wonder_card) or current_player.bot:
+            if current_player.play_card(wonder_card, current_player.bot) or current_player.bot:
                 hand = self.game.current_player_hand()
                 del hand[selected_card_number]
                 current_player.wonder_level += 1
@@ -198,10 +198,7 @@ class GameController:
             selected_card = card
 
             # WARNING TO FUTURE SELF: BOT IGNORES CAN PLAY FUNCTION - ANY AI LOGIG BUG WILL ALLOW IT TO PLAY CARDS FOR FREE
-            can_play = False
-            if current_player.bot:
-                can_play = True
-            if current_player.play_card(selected_card, can_play) or current_player.play_for_free:
+            if current_player.play_card(selected_card, current_player.bot) or current_player.play_for_free:
                 if card.icon:
                     card.icon.on_played(current_player, self.game.players)
                 del hand[selected_card_number]
