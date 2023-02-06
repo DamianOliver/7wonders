@@ -1,7 +1,5 @@
 # 7 Wonders
 
-## Source Code Headers
-
 Every file containing source code must include copyright and license
 information. This includes any JS/CSS files that you might be serving out to
 browsers. (This is to help well-intentioned people avoid accidental copying that
@@ -22,6 +20,9 @@ Apache header:
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
+    
+    
+This is a video game adaptation of the board game 7 Wonders written with Pygame. It is made for single player with the option to play against bots.
 
 
 ![image](https://user-images.githubusercontent.com/75225314/216514970-049e92c4-3aea-47d0-8978-47b57e984ee8.png)
