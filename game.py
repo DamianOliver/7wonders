@@ -86,6 +86,8 @@ class Game:
         self.deck = self.create_deck()
         self.hands = self.create_hands(self.deck)
 
+        self.winners = []
+
     def current_player_finished(self):
         # there is a PURELY GRAPHICAL glitch where a highlighted bought resource remains highlighted after the first card has been bought when playing the last two cards. maybe fix that some day
         if len(self.current_player_hand()) == 1 and self.current_player().play_last_card:
@@ -355,7 +357,7 @@ class Game:
                 Card("STUDY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.WOOD, R.PAPYRUS, R.SILK], num_players = 3),
                 
                 Card("HAVEN", C.COMMERCIAL, icon = OneGoldPointForRaw(), cost = [R.WOOD, R.ORE, R.SILK], num_players = 4),
-                Card("COMMERCE CHAMBER", C.COMMERCIAL, icon = TwoPointForMfc(), cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 4),
+                Card("COMMERCE CHAMBER", C.COMMERCIAL, icon = TwoGoldPointForMfc(), cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 4),
                 Card("GARDENS", C.CIVIC, points = 5, cost = [R.BRICK, R.BRICK, R.WOOD], num_players = 4),
                 Card("ARSENAL", C.MILITARY, num_shields = 3, cost = [R.WOOD, R.WOOD, R.ORE, R.SILK], num_players = 4),
                 Card("CIRCUS", C.MILITARY, num_shields = 3, cost = [R.STONE, R.STONE, R.STONE, R.ORE], num_players = 4),
@@ -368,7 +370,7 @@ class Game:
                 Card("CIRCUS", C.MILITARY, num_shields = 3, cost = [R.STONE, R.STONE, R.STONE, R.ORE], num_players = 5),
                 Card("STUDY", C.SCIENCE, provides_sciences = [(S.COG,)], cost = [R.WOOD, R.PAPYRUS, R.SILK], num_players = 5),
 
-                Card("COMMERCE CHAMBER", C.COMMERCIAL, icon = TwoPointForMfc(), cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 6),
+                Card("COMMERCE CHAMBER", C.COMMERCIAL, icon = TwoGoldPointForMfc(), cost = [R.BRICK, R.BRICK, R.PAPYRUS], num_players = 6),
                 Card("LIGHTHOUSE", C.COMMERCIAL, icon = OneGoldPointForCommercial(), cost = [R.STONE, R.GLASS], num_players = 6),
                 Card("TOWN HALL", C.CIVIC, points = 6, cost = [R.STONE, R.STONE, R.ORE, R.GLASS], num_players = 6),
                 Card("PANTHEON", C.CIVIC, points = 7, cost = [R.BRICK, R.BRICK, R.ORE, R.GLASS, R.PAPYRUS, R.SILK], num_players = 6),
@@ -562,22 +564,21 @@ class Game:
     def end_game(self):
         self.war()
 
-        winners = []
         best_score = -1
         for player in self.players:
             player.current_score = self.score_player(player)
             if player.current_score > best_score:
-                winners = [player.player_number]
+                self.winners = [player.player_number]
                 best_score = player.current_score
             elif player.current_score == best_score:
-                winners.append(player.player_number)
-        if len(winners) == 1:
-            print("Player number", winners[0], "wins!")
+                self.winners.append(player.player_number)
+        if len(self.winners) == 1:
+            print("Player number", self.winners[0], "wins!")
         else:
             print("A tie!")
             print("List of winners: ")
             print("--------")
-            for winner in winners:
+            for winner in self.winners:
                 print(winner)
             print("--------")
 
@@ -656,7 +657,7 @@ class Game:
         olympia_b = Wonder("Olympia", pg.image.load("Images/Wonders/olympia_b.png"), olympia_b_card_list)
         olympia = [olympia_a, olympia_b]
 
-        wonder_list = [alexandria, rhodos, babylon, ghiza, ephesos, olympia]
+        wonder_list = [rhodos, babylon, ghiza, ephesos, alexandria, olympia]
         random.shuffle(wonder_list)
         return wonder_list
 

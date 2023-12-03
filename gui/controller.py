@@ -299,6 +299,10 @@ class GameController:
             current_player.money -= cost[0] + cost[1]
         elif action == "wonder":
             self.build_wonder(selected_card_index)
+            left_player, right_player = self.game.left_right_players(current_player)
+            left_player.money += cost[0]
+            right_player.money += cost[1]
+            current_player.money -= cost[0] + cost[1]
         elif action == "discard":
             self.discard_card(selected_card_index)
 

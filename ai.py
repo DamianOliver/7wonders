@@ -61,11 +61,11 @@ class Ai:
             self.bias_dict[C.MFG_R] = 3
 
         elif self.player.wonder.name == "Ghiza":
-            self.bias_dict[C.RAW_R] = 1.5
+            self.bias_dict[C.RAW_R] = 0.5
             self.bias_dict[C.MFG_R] = -1.5
             self.bias_dict[C.CIVIC] = 0
-            self.bias_dict[C.MILITARY] = 2
-            self.bias_dict[C.WONDER_C] = 0
+            self.bias_dict[C.MILITARY] = 1
+            self.bias_dict[C.WONDER_C] = 4
 
         elif self.player.wonder.name == "Ephesos":
             self.bias_dict[C.RAW_R] = -1
@@ -161,7 +161,8 @@ class Ai:
                         added_value += self.resource_values_dict[len(resource_tuple)]
                     else:
                         # -3 because duplicate manufactored resource cards is really dumb
-                        added_value += max(self.resource_values_dict[len(resource_tuple)] - resource_totals[resource], 0) - 3
+                        pen = -3 if len(resource_tuple) == 1 else -3
+                        added_value += max(self.resource_values_dict[len(resource_tuple)] - resource_totals[resource], 0) + pen
         if card.card_type == C.RAW_R:
             added_value += self.bias_dict[C.RAW_R]
             return added_value * 2

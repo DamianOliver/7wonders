@@ -159,6 +159,8 @@ ALL_CARDS_VIEW_BUTTON_SIZE = (WONDER_BOARD_SIZE[0] - 150, SELF_LABEL_HEIGHT - FI
 
 MONEY_COST_FONT_SIZE = 10
 
+GAME_OVER_FONT_SIZE = 60
+
 RESOURCE_IMAGE_FILE_NAMES = {
     R.STONE: 'Images/stone.png',
     R.ORE: 'Images/ore.png',
@@ -204,6 +206,7 @@ class GameView(View):
         self.adjacent_resource_view = AdjacentResourceView(game, board, controller)
         self.all_cards_view_button = AllCardsViewButton(game, board, controller)
         self.all_cards_view = AllCardsView(game, board, controller)
+        self.game_over_view = GameOverView(game, board, controller)
 
         location_index = 0
         player_view_list = []
@@ -212,7 +215,7 @@ class GameView(View):
             player_view_list.append(self.player_view)
             location_index += 1
 
-        self.set_children([self.hand_view, self.discard_button_view, self.wonder_button_view, self.money_view, self.self_view, self.adjacent_resource_view, self.all_cards_view_button])
+        self.set_children([self.hand_view, self.discard_button_view, self.wonder_button_view, self.money_view, self.self_view, self.adjacent_resource_view, self.all_cards_view_button, self.game_over_view])
         self.children += player_view_list
         self.children.append(self.all_cards_view)
 
@@ -249,7 +252,6 @@ class SelfView(View):
         h_offset = 0
         if player.wonder_selected:
             h_offset = WONDER_HIGHLIGHT_DISTANCE
-        # subract h offset from 
         board_image = player.wonder.image
         scaled_image = pg.transform.smoothscale(board_image, (WONDER_BOARD_SIZE[0], WONDER_BOARD_SIZE[1] - 2 * h_offset))
 
@@ -916,14 +918,15 @@ class MoneyView(View):
         return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + MONEY_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_SIZE[1] * 2 + BUTTON_MARGIN * 2)
 
     def draw(self):
-        money_image = pg.image.load('Images/money_image.png')
-        money_image = pg.transform.smoothscale(money_image, MONEY_IMAGE_SIZE)
-        screen.blit(money_image, self.location)
+        if not self.board.game_over:
+            money_image = pg.image.load('Images/money_image.png')
+            money_image = pg.transform.smoothscale(money_image, MONEY_IMAGE_SIZE)
+            screen.blit(money_image, self.location)
 
-        money_font = pg.font.SysFont("timesnewroman", MONEY_FONT_SIZE)
-        money_text = money_font.render(str(self.game.current_player().money - self.game.current_player().spent_money_l - self.game.current_player().spent_money_r), True, (0, 0, 0))
-        money_text_rect = money_text.get_rect(center = (self.location[0] + MONEY_IMAGE_SIZE[0]/2, self.location[1] + MONEY_IMAGE_SIZE[1]/2))
-        screen.blit(money_text, money_text_rect)
+            money_font = pg.font.SysFont("timesnewroman", MONEY_FONT_SIZE)
+            money_text = money_font.render(str(self.game.current_player().money - self.game.current_player().spent_money_l - self.game.current_player().spent_money_r), True, (0, 0, 0))
+            money_text_rect = money_text.get_rect(center = (self.location[0] + MONEY_IMAGE_SIZE[0]/2, self.location[1] + MONEY_IMAGE_SIZE[1]/2))
+            screen.blit(money_text, money_text_rect)
 
     def layout(self, screen_dimension):
         self.location = self.calc_location(screen_dimension)
@@ -1091,11 +1094,14 @@ class HandView(View):
         self.set_children(self.card_views)
         
     def draw(self):
-        hand_cards = self.game.current_player_hand()
-        for i in range(len(hand_cards)):
-            self.card_views[i].draw()
+        if not self.board.game_over:
+            hand_cards = self.game.current_player_hand()
+            for i in range(len(hand_cards)):
+                self.card_views[i].draw()
 
     def handle_event(self, event):
+        if self.board.game_over:
+            return False
         hand_cards = self.game.current_player_hand()
         for i in range(len(hand_cards)):
             if self.card_views[i].handle_event(event):
@@ -1318,10 +1324,11 @@ class DiscardButtonView(View):
         return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1])
 
     def draw(self):
-        if not self.board.discard and not self.board.play_wonder:
-            self.draw_discard_button()
-        else:
-            self.draw_cancel_button()
+        if not self.board.game_over:
+            if not self.board.discard and not self.board.play_wonder:
+                self.draw_discard_button()
+            else:
+                self.draw_cancel_button()
 
     def draw_discard_button(self):
         pg.draw.rect(screen, pg.Color(DISCARD_BUTTON_COLOR), pg.Rect(self.location, DISCARD_BUTTON_SIZE), border_radius=int(DISCARD_BUTTON_ROUND_DISTANCE))
@@ -1368,8 +1375,9 @@ class WonderButtonView(View):
         return (LAST_CARD_LOCATION[0] + HAND_CARD_SIZE[0] + DISCARD_BUTTON_MARGIN[0], LAST_CARD_LOCATION[1] + DISCARD_BUTTON_MARGIN[1] + DISCARD_BUTTON_SIZE[1] + BUTTON_MARGIN)
 
     def draw(self):
-        if not self.board.play_wonder and not self.board.discard and self.game.current_player().wonder_level < len(self.game.current_player().wonder.layers_list) - 1:
-            self.draw_wonder_button()
+        if not self.board.game_over:
+            if not self.board.play_wonder and not self.board.discard and self.game.current_player().wonder_level < len(self.game.current_player().wonder.layers_list) - 1:
+                self.draw_wonder_button()
 
     def draw_wonder_button(self):
         pg.draw.rect(screen, pg.Color(WONDER_BUTTON_COLOR), pg.Rect(self.location, WONDER_BUTTON_SIZE), border_radius=int(WONDER_BUTTON_ROUND_DISTANCE))
@@ -1472,7 +1480,6 @@ class AllCardsView(View):
                 card_location = (ALL_CARDS_MARGIN[0] + (ALL_CARDS_SIZE[0] + ALL_CARDS_SPACING) * (i % self.num_per_row), ALL_CARDS_MARGIN[1] + ALL_CARDS_SPACING + (ALL_CARDS_SIZE[1] + ALL_CARDS_SPACING) * (int((i / self.num_per_row)) + 1))
                 self.draw_card(card, card_location)
                 
-                        
             self.draw_tokens()
             self.draw_button()
 
@@ -1565,3 +1572,26 @@ class AllCardsView(View):
 
     def load_resource_image(self, resource):
         return pg.image.load(RESOURCE_IMAGE_FILE_NAMES[resource])
+
+class GameOverView(View):
+    def __init__(self, game, board, controller):
+        super().__init__(game, board, controller)
+        self.set_children([])
+        self.location = (0, 0)
+
+    def draw(self):
+        if self.board.game_over:
+            self.draw_end_game_text()
+
+    def layout(self, screen_dimension):
+        self.location = self.calc_location(screen_dimension)
+
+    def calc_location(self, screen_dimension):
+        return (screen_dimension[0] / 2, screen_dimension[1] / 3)
+
+
+    def draw_end_game_text(self):
+        game_over_font = pg.font.SysFont("timesnewroman", GAME_OVER_FONT_SIZE)
+        game_over_text = game_over_font.render(("GAME OVER"), True, (0, 0, 0))
+        game_over_rect = game_over_text.get_rect(center = (self.location[0], self.location[1]))
+        screen.blit(game_over_text, game_over_rect)

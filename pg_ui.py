@@ -69,7 +69,7 @@ class PgUi:
             self.controller.on_bot_turn()
         self.run_event_loop()
 
-        # self.controller.test_ai(100)
+        # self.controller.test_ai(200)
 
     def run_event_loop(self):
         global screen_dimension
